@@ -1,8 +1,10 @@
 import { createRoot } from 'react-dom/client';
+import App from './App'
+import { StrictMode } from 'react'
 import { useState, useRef, useCallback } from "react";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const PIXABAY_API_KEY = "YOUR_PIXABAY_KEY_HERE"; // Replace with your key
+const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_KEY; // Replace with your key
 const PIXABAY_BASE = "https://pixabay.com/api/";
 
 // ─── Rate Limiter (max 80 requests per minute) ───────────────────────────────
@@ -618,4 +620,8 @@ export default function Moodboard() {
 }
 
 
-createRoot(document.getElementById('root')).render(<Moodboard />);
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+)

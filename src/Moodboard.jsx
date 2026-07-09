@@ -1,8 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const PIXABAY_API_KEY = "YOUR_PIXABAY_KEY_HERE"; // Replace with your key
+const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_KEY;
 const PIXABAY_BASE = "https://pixabay.com/api/";
+
+// ─── CORS proxy for StackBlitz ────────────────────────────────────────────────
+const proxyImg = (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=jpg`;
 
 // ─── Rate Limiter (max 80 requests per minute) ───────────────────────────────
 const rateLimiter = {
@@ -222,6 +225,7 @@ function PixabaySearch({ onSelect }) {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [remaining, setRemaining] = useState(rateLimiter.remaining());
+  const [hoveredId, setHoveredId] = useState(null);
 
   const search = async (q = query, p = 1) => {
     if (!q.trim()) return;
@@ -232,6 +236,7 @@ function PixabaySearch({ onSelect }) {
     setRemaining(rateLimiter.remaining());
     setLoading(true);
     setError("");
+    setResults([]); // clear first to avoid stale grid
     try {
       const url = `${PIXABAY_BASE}?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(q)}&image_type=photo&per_page=20&page=${p}&safesearch=true`;
       const res = await fetch(url);
@@ -275,70 +280,95 @@ function PixabaySearch({ onSelect }) {
 
       {/* Rate limit indicator */}
       <div style={{ fontSize: 11, color: "#aaa", marginBottom: 8 }}>
-        Requests remaining this minute: <strong style={{ color: remaining < 20 ? "#ff9900" : "#4f8ef7" }}>{remaining}</strong> / 80
+        Requests remaining: <strong style={{ color: remaining < 20 ? "#ff9900" : "#4f8ef7" }}>{remaining}</strong> / 80
       </div>
 
       {error && <div style={{ color: "#ff4d4d", fontSize: 12, marginBottom: 8 }}>{error}</div>}
 
-      {/* Results grid */}
-      {results.length > 0 && (
-        <>
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 6, maxHeight: 280, overflowY: "auto",
-            marginBottom: 10,
-          }}>
-            {results.map((img) => (
-              <div
-                key={img.id}
-                onClick={() => onSelect(img.webformatURL, img.tags?.split(",")[0] || "furniture")}
+      {/* Fixed height container prevents layout shift / jitter */}
+      <div style={{ minHeight: 280 }}>
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 280, color: "#aaa", fontSize: 13 }}>
+            Searching...
+          </div>
+        )}
+
+        {!loading && results.length > 0 && (
+          <>
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 6, height: 280, overflowY: "auto",
+              marginBottom: 10,
+            }}>
+              {results.map((img) => (
+                <div
+                  key={img.id}
+                  onClick={() => onSelect(proxyImg(img.webformatURL), img.tags?.split(",")[0] || "furniture")}
+                  onMouseEnter={() => setHoveredId(img.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    cursor: "pointer",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: hoveredId === img.id ? "2px solid #4f8ef7" : "2px solid transparent",
+                    aspectRatio: "1",
+                    background: "#f0f0f0",
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src={proxyImg(img.previewURL)}
+                    alt={img.tags}
+                    loading="lazy"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    onError={(e) => {
+                      e.target.src = "https://placehold.co/100x100?text=?";
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}>
+              <button
+                onClick={() => search(query, page - 1)}
+                disabled={page <= 1 || loading}
                 style={{
-                  cursor: "pointer", borderRadius: 6, overflow: "hidden",
-                  border: "2px solid transparent", transition: "border 0.12s",
-                  aspectRatio: "1",
+                  padding: "5px 12px", borderRadius: 5, border: "none",
+                  background: page <= 1 ? "#eee" : "#4f8ef7",
+                  color: page <= 1 ? "#aaa" : "white",
+                  cursor: page <= 1 ? "default" : "pointer", fontSize: 12,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.border = "2px solid #4f8ef7"}
-                onMouseLeave={(e) => e.currentTarget.style.border = "2px solid transparent"}
-              >
-                <img
-                  src={img.previewURL} alt={img.tags}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                />
-              </div>
-            ))}
-          </div>
+              >← Prev</button>
+              <span style={{ fontSize: 12, color: "#888" }}>Page {page} of {totalPages}</span>
+              <button
+                onClick={() => search(query, page + 1)}
+                disabled={page >= totalPages || loading}
+                style={{
+                  padding: "5px 12px", borderRadius: 5, border: "none",
+                  background: page >= totalPages ? "#eee" : "#4f8ef7",
+                  color: page >= totalPages ? "#aaa" : "white",
+                  cursor: page >= totalPages ? "default" : "pointer", fontSize: 12,
+                }}
+              >Next →</button>
+            </div>
+          </>
+        )}
 
-          {/* Pagination */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}>
-            <button
-              onClick={() => search(query, page - 1)}
-              disabled={page <= 1 || loading}
-              style={{
-                padding: "5px 12px", borderRadius: 5, border: "none",
-                background: page <= 1 ? "#eee" : "#4f8ef7", color: page <= 1 ? "#aaa" : "white",
-                cursor: page <= 1 ? "default" : "pointer", fontSize: 12,
-              }}
-            >← Prev</button>
-            <span style={{ fontSize: 12, color: "#888" }}>Page {page} of {totalPages}</span>
-            <button
-              onClick={() => search(query, page + 1)}
-              disabled={page >= totalPages || loading}
-              style={{
-                padding: "5px 12px", borderRadius: 5, border: "none",
-                background: page >= totalPages ? "#eee" : "#4f8ef7",
-                color: page >= totalPages ? "#aaa" : "white",
-                cursor: page >= totalPages ? "default" : "pointer", fontSize: 12,
-              }}
-            >Next →</button>
+        {!loading && results.length === 0 && query && !error && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 280, color: "#aaa", fontSize: 13 }}>
+            No results found for "{query}"
           </div>
-        </>
-      )}
+        )}
 
-      {results.length === 0 && !loading && query && !error && (
-        <div style={{ textAlign: "center", color: "#aaa", fontSize: 13, padding: "20px 0" }}>
-          No results found for "{query}"
-        </div>
-      )}
+        {!loading && results.length === 0 && !query && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 280, color: "#ccc", fontSize: 13, gap: 8 }}>
+            <div style={{ fontSize: 32 }}>🔍</div>
+            <div>Search for furniture above</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function Auth({ onAuth }) {
         setTab("login");
       }
     } catch (err) {
-      setError(err.message || "Something went wrong.");
+      setError(err.message + " | " + JSON.stringify(err));
     } finally {
       setLoading(false);
     }

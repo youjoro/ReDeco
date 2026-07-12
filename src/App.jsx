@@ -4,6 +4,30 @@ import Auth from "./Auth";
 import RoomManager from "./RoomManager";
 import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./supabase";
 
+const colors = {
+  toolbar: "#3d2b1f", toolbarBorder: "#5c3d2e",
+  accent: "#c47a45", accentDark: "#a05a2c",
+  text: "#fdf6f0", textMuted: "#c9a98a", textDim: "#6b4a35",
+};
+
+const toolbarBtn = (variant = "ghost") => ({
+  padding: "5px 12px", borderRadius: "8px", border: "none",
+  cursor: "pointer", fontWeight: "600", fontSize: "12px",
+  transition: "all 0.15s",
+  ...(variant === "primary" && {
+    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
+    color: "white", boxShadow: "0 2px 8px rgba(160,90,44,0.3)",
+  }),
+  ...(variant === "ghost" && {
+    background: "transparent", color: colors.textMuted,
+    border: "1px solid #5c3d2e",
+  }),
+  ...(variant === "muted" && {
+    background: "rgba(255,255,255,0.06)", color: colors.textDim,
+    border: "1px solid #4a3020",
+  }),
+});
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -11,23 +35,18 @@ export default function App() {
   const [currentRoom, setCurrentRoom] = useState({ id: null, name: "Untitled Room" });
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [background, setBackground] = useState(null);
+  const [items, setItems] = useState([]);
 
-  // Listen for auth state changes
   useEffect(() => {
-    getUser().then((u) => {
-      setUser(u);
-      setAuthLoading(false);
-    });
+    getUser().then((u) => { setUser(u); setAuthLoading(false); });
     const { data: { subscription } } = onAuthChange((u) => setUser(u));
     return () => subscription.unsubscribe();
   }, []);
 
-  // Save current room to Supabase
-  const handleSave = async (background, items) => {
-    setSaving(true);
-    setSaveMsg("");
+  const handleSave = async () => {
+    setSaving(true); setSaveMsg("");
     try {
-      // Upload base64 images to Supabase Storage so they persist
       const uploadedItems = await Promise.all(
         items.map(async (item) => {
           if (item.src.startsWith("data:") || item.src.startsWith("blob:")) {
@@ -37,15 +56,12 @@ export default function App() {
               const file = new File([blob], `item-${item.id}.png`, { type: blob.type });
               const url = await uploadBase64Image(file, "furniture");
               return { ...item, src: url };
-            } catch {
-              return item; // fallback to original if upload fails
-            }
+            } catch { return item; }
           }
           return item;
         })
       );
 
-      // Upload background if it's a local blob/base64
       let bgUrl = background;
       if (background && (background.startsWith("data:") || background.startsWith("blob:"))) {
         try {
@@ -53,23 +69,15 @@ export default function App() {
           const blob = await res.blob();
           const file = new File([blob], `bg-${Date.now()}.jpg`, { type: blob.type });
           bgUrl = await uploadBase64Image(file, "backgrounds");
-        } catch {
-          bgUrl = background;
-        }
+        } catch { bgUrl = background; }
       }
 
-      const saved = await saveRoom({
-        id: currentRoom.id,
-        name: currentRoom.name,
-        background: bgUrl,
-        items: uploadedItems,
-      });
-
+      const saved = await saveRoom({ id: currentRoom.id, name: currentRoom.name, background: bgUrl, items: uploadedItems });
       setCurrentRoom((prev) => ({ ...prev, id: saved.id }));
-      setSaveMsg("Saved!");
-      setTimeout(() => setSaveMsg(""), 2000);
-    } catch (err) {
-      setSaveMsg("Save failed.");
+      setSaveMsg("✓ Saved");
+      setTimeout(() => setSaveMsg(""), 2500);
+    } catch {
+      setSaveMsg("Save failed");
       setTimeout(() => setSaveMsg(""), 3000);
     } finally {
       setSaving(false);
@@ -78,14 +86,15 @@ export default function App() {
 
   const handleLoadRoom = (room) => {
     setCurrentRoom({ id: room.id, name: room.name });
+    setBackground(room.background || null);
+    setItems(room.items || []);
     setShowRooms(false);
-    // Pass room data to Moodboard via key to force remount with new data
-    window.__loadRoom = room;
   };
 
   const handleNewRoom = () => {
     setCurrentRoom({ id: null, name: "Untitled Room" });
-    window.__loadRoom = null;
+    setBackground(null);
+    setItems([]);
     setShowRooms(false);
   };
 
@@ -94,84 +103,84 @@ export default function App() {
     if (name?.trim()) setCurrentRoom((prev) => ({ ...prev, name: name.trim() }));
   };
 
-  if (authLoading) {
-    return (
-      <div style={{
-        minHeight: "100vh", background: "#1a1a2e",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "white", fontFamily: "sans-serif", fontSize: 16,
-      }}>
-        Loading...
+  if (authLoading) return (
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #fdf6f0 0%, #f5e6d8 50%, #ede0d4 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: "'Inter','Segoe UI',sans-serif",
+    }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: "48px", marginBottom: "12px" }}>🛋️</div>
+        <div style={{ color: "#a07850", fontSize: "14px" }}>Loading...</div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (!user) {
-    return <Auth onAuth={() => getUser().then(setUser)} />;
-  }
+  if (!user) return <Auth onAuth={() => getUser().then(setUser)} />;
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
       {/* Top bar */}
       <div style={{
-        background: "#16213e", padding: "8px 16px",
-        display: "flex", alignItems: "center", gap: 10,
-        borderBottom: "1px solid #0f3460", fontFamily: "sans-serif",
-        zIndex: 100, flexShrink: 0,
+        background: colors.toolbar, padding: "9px 16px",
+        display: "flex", alignItems: "center", gap: "10px",
+        borderBottom: `1px solid ${colors.toolbarBorder}`,
+        flexShrink: 0, flexWrap: "wrap",
       }}>
-        <span style={{ color: "white", fontWeight: 700, fontSize: 15 }}>🛋️ Room Planner</span>
+        {/* Brand */}
+        <div style={{ display: "flex", alignItems: "center", gap: "7px", marginRight: "4px" }}>
+          <span style={{ fontSize: "18px" }}>🛋️</span>
+          <span style={{ color: colors.text, fontWeight: "700", fontSize: "14px", letterSpacing: "-0.2px" }}>Room Planner</span>
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: "1px", height: "18px", background: "#4a3020" }} />
 
         {/* Room name */}
         <button onClick={handleRename} style={{
-          background: "transparent", border: "1px solid #2a3a5e",
-          color: "#ccc", padding: "4px 10px", borderRadius: 6,
-          cursor: "pointer", fontSize: 13,
+          background: "rgba(255,255,255,0.07)", border: "1px solid #4a3020",
+          color: colors.textMuted, padding: "4px 10px", borderRadius: "7px",
+          cursor: "pointer", fontSize: "12px", fontWeight: "500",
+          display: "flex", alignItems: "center", gap: "5px",
         }}>
-          ✏️ {currentRoom.name}
+          <span>✏️</span>
+          <span>{currentRoom.name}</span>
         </button>
 
-        {/* Rooms list */}
-        <button onClick={() => setShowRooms(true)} style={{
-          background: "#0f3460", color: "#ccc", border: "none",
-          padding: "5px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12,
-        }}>📂 My Rooms</button>
+        {/* My Rooms */}
+        <button onClick={() => setShowRooms(true)} style={toolbarBtn("ghost")}>
+          📂 My Rooms
+        </button>
 
-        {/* Save button */}
-        <button
-          onClick={() => {
-            // Trigger save from Moodboard via global callback
-            if (window.__triggerSave) window.__triggerSave();
-          }}
-          disabled={saving}
-          style={{
-            background: saving ? "#3a6abf" : "#4f8ef7", color: "white",
-            border: "none", padding: "5px 14px", borderRadius: 6,
-            cursor: saving ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 500,
-          }}
-        >{saving ? "Saving..." : "💾 Save"}</button>
+        {/* Save */}
+        <button onClick={handleSave} disabled={saving} style={{ ...toolbarBtn("primary"), opacity: saving ? 0.7 : 1 }}>
+          {saving ? "Saving..." : "💾 Save"}
+        </button>
 
+        {/* Save message */}
         {saveMsg && (
           <span style={{
-            fontSize: 12, color: saveMsg === "Saved!" ? "#4caf50" : "#ff6b6b",
-            fontWeight: 500,
+            fontSize: "12px", fontWeight: "600",
+            color: saveMsg.startsWith("✓") ? "#7ecba0" : "#e87e6b",
           }}>{saveMsg}</span>
         )}
 
-        {/* User info + sign out */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "#888", fontSize: 12 }}>{user.email}</span>
-          <button onClick={signOut} style={{
-            background: "transparent", color: "#888",
-            border: "1px solid #333", padding: "4px 10px",
-            borderRadius: 6, cursor: "pointer", fontSize: 12,
-          }}>Sign out</button>
+        {/* Right side */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ color: colors.textDim, fontSize: "11px" }}>{user.email}</span>
+          <button onClick={signOut} style={toolbarBtn("muted")}>Sign out</button>
         </div>
       </div>
 
-      {/* Moodboard canvas */}
-      <MoodboardWithSave onSave={handleSave} />
+      {/* Canvas */}
+      <Moodboard
+        initialBackground={background}
+        initialItems={items}
+        onBackgroundChange={setBackground}
+        onItemsChange={setItems}
+      />
 
-      {/* Rooms modal */}
       {showRooms && (
         <RoomManager
           onClose={() => setShowRooms(false)}
@@ -180,38 +189,5 @@ export default function App() {
         />
       )}
     </div>
-  );
-}
-
-// Wrapper that exposes save trigger and initial load to App
-function MoodboardWithSave({ onSave }) {
-  const [background, setBackground] = useState(
-    window.__loadRoom?.background || null
-  );
-  const [items, setItems] = useState(
-    window.__loadRoom?.items || []
-  );
-
-  // Expose save trigger globally so App toolbar can call it
-  useEffect(() => {
-    window.__triggerSave = () => onSave(background, items);
-    return () => { window.__triggerSave = null; };
-  }, [background, items, onSave]);
-
-  // When a room is loaded, sync state
-  useEffect(() => {
-    if (window.__loadRoom) {
-      setBackground(window.__loadRoom.background || null);
-      setItems(window.__loadRoom.items || []);
-    }
-  }, []);
-
-  return (
-    <Moodboard
-      initialBackground={background}
-      initialItems={items}
-      onBackgroundChange={setBackground}
-      onItemsChange={setItems}
-    />
   );
 }

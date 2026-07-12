@@ -1,13 +1,10 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 
-// ─── Config ──────────────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_KEY;
 const PIXABAY_BASE = "https://pixabay.com/api/";
 
-// ─── CORS proxy for StackBlitz ────────────────────────────────────────────────
-const proxyImg = (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=jpg`;
-
-// ─── Rate Limiter (max 80 requests per minute) ───────────────────────────────
+// ─── Rate Limiter (max 80 requests per minute) ────────────────────────────────
 const rateLimiter = {
   requests: [],
   canRequest() {
@@ -37,15 +34,74 @@ function loadImageSize(src, maxW = 220) {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       const scale = Math.min(1, maxW / img.naturalWidth);
-      resolve({
-        width: Math.round(img.naturalWidth * scale),
-        height: Math.round(img.naturalHeight * scale),
-      });
+      resolve({ width: Math.round(img.naturalWidth * scale), height: Math.round(img.naturalHeight * scale) });
     };
     img.onerror = () => resolve({ width: 220, height: 160 });
     img.src = src;
   });
 }
+
+// ─── Warm cozy design tokens ──────────────────────────────────────────────────
+const colors = {
+  bg: "#fdf6f0",
+  bgSecondary: "#f5ede6",
+  bgCard: "rgba(255,255,255,0.92)",
+  border: "#e8d5c4",
+  borderFocus: "#c47a45",
+  text: "#3d2b1f",
+  textMuted: "#a07850",
+  textLight: "#c9a98a",
+  accent: "#c47a45",
+  accentDark: "#a05a2c",
+  accentLight: "#f5e6d8",
+  toolbar: "#3d2b1f",
+  toolbarBorder: "#5c3d2e",
+  danger: "#c0392b",
+  dangerBg: "#fff5f5",
+};
+
+const btn = (variant = "primary", small = false) => ({
+  padding: small ? "5px 12px" : "8px 16px",
+  borderRadius: "10px",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: "600",
+  fontSize: small ? "12px" : "13px",
+  transition: "all 0.15s",
+  ...(variant === "primary" && {
+    background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentDark} 100%)`,
+    color: "white",
+    boxShadow: "0 2px 8px rgba(160,90,44,0.25)",
+  }),
+  ...(variant === "secondary" && {
+    background: colors.bgSecondary,
+    color: colors.text,
+    border: `1px solid ${colors.border}`,
+  }),
+  ...(variant === "ghost" && {
+    background: "transparent",
+    color: colors.textMuted,
+    border: `1px solid ${colors.toolbarBorder}`,
+  }),
+  ...(variant === "danger" && {
+    background: colors.dangerBg,
+    color: colors.danger,
+    border: "1px solid #fac8c8",
+  }),
+});
+
+const input = {
+  width: "100%",
+  padding: "9px 12px",
+  borderRadius: "9px",
+  border: `1.5px solid ${colors.border}`,
+  fontSize: "13px",
+  outline: "none",
+  background: "#fdf8f5",
+  color: colors.text,
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+};
 
 // ─── Furniture Item ───────────────────────────────────────────────────────────
 function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect, gridSize }) {
@@ -59,39 +115,25 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
     e.stopPropagation();
     onSelect(item.id);
     dragOffset.current = { x: e.clientX - item.x, y: e.clientY - item.y };
-    const onMove = (e) => {
-      onDrag(item.id, {
-        x: snap(e.clientX - dragOffset.current.x, gridSize),
-        y: snap(e.clientY - dragOffset.current.y, gridSize),
-      });
-    };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
+    const onMove = (e) => onDrag(item.id, {
+      x: snap(e.clientX - dragOffset.current.x, gridSize),
+      y: snap(e.clientY - dragOffset.current.y, gridSize),
+    });
+    const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   };
 
   const handleResizeMouseDown = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    resizeStart.current = {
-      mouseX: e.clientX, mouseY: e.clientY,
-      startW: item.width, startH: item.height,
-      ratio: item.width / item.height,
-    };
+    e.stopPropagation(); e.preventDefault();
+    resizeStart.current = { mouseX: e.clientX, mouseY: e.clientY, startW: item.width, startH: item.height, ratio: item.width / item.height };
     const onMove = (e) => {
       const dx = e.clientX - resizeStart.current.mouseX;
       const rawW = Math.max(60, resizeStart.current.startW + dx);
       const snappedW = snap(rawW, gridSize);
-      const snappedH = Math.round(snappedW / resizeStart.current.ratio);
-      onResize(item.id, { width: snappedW, height: snappedH });
+      onResize(item.id, { width: snappedW, height: Math.round(snappedW / resizeStart.current.ratio) });
     };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
+    const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   };
@@ -105,52 +147,49 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        position: "absolute",
-        left: item.x, top: item.y,
+        position: "absolute", left: item.x, top: item.y,
         width: item.width, height: item.height,
         cursor: "grab", userSelect: "none",
-        outline: isSelected ? "2px solid #4f8ef7" : isHovered ? "2px solid rgba(79,142,247,0.4)" : "2px solid transparent",
-        borderRadius: 4,
-        boxShadow: isSelected ? "0 4px 16px rgba(79,142,247,0.3)" : isHovered ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 8px rgba(0,0,0,0.12)",
+        outline: isSelected ? `2px solid ${colors.accent}` : isHovered ? `2px solid ${colors.textLight}` : "2px solid transparent",
+        borderRadius: "8px",
+        boxShadow: isSelected ? `0 4px 20px rgba(196,122,69,0.3)` : isHovered ? "0 4px 14px rgba(0,0,0,0.15)" : "0 2px 8px rgba(0,0,0,0.1)",
         transition: "outline 0.12s, box-shadow 0.12s",
         zIndex: isSelected ? 50 : isHovered ? 40 : 10,
       }}
     >
-      <img
-        src={item.src} alt={item.label || "furniture"} draggable={false}
-        style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 4, display: "block", pointerEvents: "none" }}
+      <img src={item.src} alt={item.label || "furniture"} draggable={false}
+        style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "8px", display: "block", pointerEvents: "none" }}
       />
       {item.label && showControls && (
         <div style={{
           position: "absolute", bottom: -22, left: 0, right: 0,
-          textAlign: "center", fontSize: 11, color: "#333",
-          background: "rgba(255,255,255,0.85)", borderRadius: 3, padding: "1px 4px",
-          pointerEvents: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          textAlign: "center", fontSize: "11px", color: colors.text,
+          background: "rgba(255,255,255,0.9)", borderRadius: "4px",
+          padding: "1px 6px", pointerEvents: "none",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          border: `1px solid ${colors.border}`,
         }}>{item.label}</div>
       )}
       {showControls && (
-        <div
-          data-delete="true"
-          onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+        <div data-delete="true" onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
           style={{
             position: "absolute", top: -10, right: -10,
-            width: 20, height: 20, background: "#ff4d4d", color: "white",
-            borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 60,
-            opacity: isSelected ? 1 : 0.7, transition: "opacity 0.12s",
+            width: 22, height: 22, background: colors.danger,
+            color: "white", borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "13px", fontWeight: "700", cursor: "pointer", zIndex: 60,
+            opacity: isSelected ? 1 : 0.8, boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
           }}
         >×</div>
       )}
       {showControls && (
-        <div
-          data-handle="true"
-          onMouseDown={handleResizeMouseDown}
+        <div data-handle="true" onMouseDown={handleResizeMouseDown}
           style={{
             position: "absolute", bottom: -6, right: -6,
-            width: 13, height: 13, background: "white",
-            border: isSelected ? "2px solid #4f8ef7" : "2px solid rgba(79,142,247,0.5)",
-            borderRadius: 3, cursor: "nwse-resize", zIndex: 60,
-            opacity: isSelected ? 1 : 0.7, transition: "opacity 0.12s",
+            width: 14, height: 14, background: "white",
+            border: `2px solid ${isSelected ? colors.accent : colors.textLight}`,
+            borderRadius: "4px", cursor: "nwse-resize", zIndex: 60,
+            opacity: isSelected ? 1 : 0.8,
           }}
         />
       )}
@@ -161,16 +200,13 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
 // ─── Draggable Grid Control ───────────────────────────────────────────────────
 function DraggableGridControl({ gridSize, onChange }) {
   const trackRef = useRef(null);
-  const MIN = 0, MAX = 80;
+  const MAX = 80;
 
   const handleMouseDown = (e) => {
     e.preventDefault();
     updateFromMouse(e);
     const onMove = (e) => updateFromMouse(e);
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
+    const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   };
@@ -181,35 +217,26 @@ function DraggableGridControl({ gridSize, onChange }) {
     const rect = track.getBoundingClientRect();
     const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
     const raw = Math.round(ratio * MAX);
-    const snapped = raw < 4 ? 0 : Math.round(raw / 4) * 4;
-    onChange(snapped);
+    onChange(raw < 4 ? 0 : Math.round(raw / 4) * 4);
   };
 
   const pct = (gridSize / MAX) * 100;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ color: "#aaa", fontSize: 12, whiteSpace: "nowrap" }}>Grid</span>
-      <div
-        ref={trackRef}
-        onMouseDown={handleMouseDown}
-        style={{ position: "relative", width: 100, height: 6, background: "#0f3460", borderRadius: 3, cursor: "pointer" }}
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <span style={{ color: colors.textLight, fontSize: "12px", whiteSpace: "nowrap" }}>Grid</span>
+      <div ref={trackRef} onMouseDown={handleMouseDown}
+        style={{ position: "relative", width: "90px", height: "5px", background: "rgba(255,255,255,0.15)", borderRadius: "3px", cursor: "pointer" }}
       >
+        <div style={{ position: "absolute", left: 0, top: 0, width: pct + "%", height: "100%", background: gridSize > 0 ? colors.accent : "rgba(255,255,255,0.3)", borderRadius: "3px" }} />
         <div style={{
-          position: "absolute", left: 0, top: 0,
-          width: pct + "%", height: "100%",
-          background: gridSize > 0 ? "#4f8ef7" : "#555",
-          borderRadius: 3, transition: "background 0.15s",
-        }} />
-        <div style={{
-          position: "absolute", left: `calc(${pct}% - 7px)`, top: "50%",
-          transform: "translateY(-50%)", width: 14, height: 14,
-          background: "white", border: "2px solid #4f8ef7",
-          borderRadius: "50%", cursor: "grab",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+          position: "absolute", left: `calc(${pct}% - 7px)`, top: "50%", transform: "translateY(-50%)",
+          width: "14px", height: "14px", background: "white",
+          border: `2px solid ${gridSize > 0 ? colors.accent : "rgba(255,255,255,0.5)"}`,
+          borderRadius: "50%", cursor: "grab", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
         }} />
       </div>
-      <span style={{ color: "#ccc", fontSize: 12, minWidth: 36 }}>
+      <span style={{ color: colors.textLight, fontSize: "12px", minWidth: "32px" }}>
         {gridSize === 0 ? "off" : `${gridSize}px`}
       </span>
     </div>
@@ -229,14 +256,9 @@ function PixabaySearch({ onSelect }) {
 
   const search = async (q = query, p = 1) => {
     if (!q.trim()) return;
-    if (!rateLimiter.canRequest()) {
-      setError("Rate limit reached (80/min). Please wait a moment.");
-      return;
-    }
+    if (!rateLimiter.canRequest()) { setError("Rate limit reached. Please wait a moment."); return; }
     setRemaining(rateLimiter.remaining());
-    setLoading(true);
-    setError("");
-    setResults([]); // clear first to avoid stale grid
+    setLoading(true); setError(""); setResults([]);
     try {
       const url = `${PIXABAY_BASE}?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(q)}&image_type=photo&per_page=20&page=${p}&safesearch=true`;
       const res = await fetch(url);
@@ -245,7 +267,7 @@ function PixabaySearch({ onSelect }) {
       setResults(data.hits || []);
       setTotalPages(Math.ceil((data.totalHits || 0) / 20));
       setPage(p);
-    } catch (err) {
+    } catch {
       setError("Search failed. Check your API key or try again.");
     } finally {
       setLoading(false);
@@ -254,121 +276,125 @@ function PixabaySearch({ onSelect }) {
 
   return (
     <div>
-      {/* Search bar */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
         <input
-          type="text"
-          placeholder="Search furniture, sofa, chair..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          type="text" placeholder="Search sofa, chair, lamp..."
+          value={query} onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
-          style={{
-            flex: 1, padding: "8px 12px", borderRadius: 6,
-            border: "1.5px solid #ddd", fontSize: 13, outline: "none",
-          }}
+          style={input}
+          onFocus={(e) => e.target.style.border = `1.5px solid ${colors.borderFocus}`}
+          onBlur={(e) => e.target.style.border = `1.5px solid ${colors.border}`}
         />
-        <button
-          onClick={() => search()}
-          disabled={loading}
-          style={{
-            padding: "8px 14px", background: "#4f8ef7", color: "white",
-            border: "none", borderRadius: 6, cursor: "pointer",
-            fontSize: 13, fontWeight: 500, opacity: loading ? 0.6 : 1,
-          }}
-        >{loading ? "..." : "Search"}</button>
+        <button onClick={() => search()} disabled={loading} style={{ ...btn("primary"), whiteSpace: "nowrap", opacity: loading ? 0.7 : 1 }}>
+          {loading ? "..." : "Search"}
+        </button>
       </div>
 
-      {/* Rate limit indicator */}
-      <div style={{ fontSize: 11, color: "#aaa", marginBottom: 8 }}>
-        Requests remaining: <strong style={{ color: remaining < 20 ? "#ff9900" : "#4f8ef7" }}>{remaining}</strong> / 80
+      <div style={{ fontSize: "11px", color: colors.textMuted, marginBottom: "10px" }}>
+        Requests remaining: <strong style={{ color: remaining < 20 ? "#e67e22" : colors.accent }}>{remaining}</strong> / 80
       </div>
 
-      {error && <div style={{ color: "#ff4d4d", fontSize: 12, marginBottom: 8 }}>{error}</div>}
+      {error && <div style={{ color: colors.danger, fontSize: "12px", marginBottom: "8px", padding: "8px 10px", background: colors.dangerBg, borderRadius: "8px", border: "1px solid #fac8c8" }}>{error}</div>}
 
-      {/* Fixed height container prevents layout shift / jitter */}
-      <div style={{ minHeight: 280 }}>
+      <div style={{ minHeight: "260px" }}>
         {loading && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 280, color: "#aaa", fontSize: 13 }}>
-            Searching...
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "260px", color: colors.textMuted, fontSize: "13px", flexDirection: "column", gap: "10px" }}>
+            <div style={{ fontSize: "28px" }}>🔍</div>
+            Searching Pixabay...
           </div>
         )}
 
         {!loading && results.length > 0 && (
           <>
-            <div style={{
-              display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 6, height: 280, overflowY: "auto",
-              marginBottom: 10,
-            }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", height: "240px", overflowY: "auto", marginBottom: "10px", paddingRight: "2px" }}>
               {results.map((img) => (
                 <div
                   key={img.id}
-                  onClick={() => onSelect(proxyImg(img.webformatURL), img.tags?.split(",")[0] || "furniture")}
+                  onClick={() => onSelect(img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
                   onMouseEnter={() => setHoveredId(img.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
-                    cursor: "pointer",
-                    borderRadius: 6,
-                    overflow: "hidden",
-                    border: hoveredId === img.id ? "2px solid #4f8ef7" : "2px solid transparent",
-                    aspectRatio: "1",
-                    background: "#f0f0f0",
-                    flexShrink: 0,
+                    cursor: "pointer", borderRadius: "8px", overflow: "hidden",
+                    border: hoveredId === img.id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                    aspectRatio: "1", background: colors.bgSecondary,
+                    transition: "border 0.12s, transform 0.12s",
+                    transform: hoveredId === img.id ? "scale(1.02)" : "scale(1)",
                   }}
                 >
-                  <img
-                    src={proxyImg(img.previewURL)}
-                    alt={img.tags}
-                    loading="lazy"
+                  <img src={img.previewURL} alt={img.tags} loading="lazy"
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                    onError={(e) => {
-                      e.target.src = "https://placehold.co/100x100?text=?";
-                    }}
+                    onError={(e) => { e.target.src = "https://placehold.co/100x100/f5ede6/a07850?text=?"; }}
                   />
                 </div>
               ))}
             </div>
 
-            {/* Pagination */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}>
-              <button
-                onClick={() => search(query, page - 1)}
-                disabled={page <= 1 || loading}
-                style={{
-                  padding: "5px 12px", borderRadius: 5, border: "none",
-                  background: page <= 1 ? "#eee" : "#4f8ef7",
-                  color: page <= 1 ? "#aaa" : "white",
-                  cursor: page <= 1 ? "default" : "pointer", fontSize: 12,
-                }}
-              >← Prev</button>
-              <span style={{ fontSize: 12, color: "#888" }}>Page {page} of {totalPages}</span>
-              <button
-                onClick={() => search(query, page + 1)}
-                disabled={page >= totalPages || loading}
-                style={{
-                  padding: "5px 12px", borderRadius: 5, border: "none",
-                  background: page >= totalPages ? "#eee" : "#4f8ef7",
-                  color: page >= totalPages ? "#aaa" : "white",
-                  cursor: page >= totalPages ? "default" : "pointer", fontSize: 12,
-                }}
-              >Next →</button>
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", alignItems: "center" }}>
+              <button onClick={() => search(query, page - 1)} disabled={page <= 1 || loading} style={{ ...btn("secondary", true), opacity: page <= 1 ? 0.5 : 1 }}>← Prev</button>
+              <span style={{ fontSize: "12px", color: colors.textMuted }}>Page {page} of {totalPages}</span>
+              <button onClick={() => search(query, page + 1)} disabled={page >= totalPages || loading} style={{ ...btn("secondary", true), opacity: page >= totalPages ? 0.5 : 1 }}>Next →</button>
             </div>
           </>
         )}
 
-        {!loading && results.length === 0 && query && !error && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 280, color: "#aaa", fontSize: 13 }}>
-            No results found for "{query}"
+        {!loading && results.length === 0 && !query && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "260px", gap: "10px", color: colors.textMuted }}>
+            <div style={{ fontSize: "36px" }}>🔍</div>
+            <div style={{ fontSize: "13px" }}>Search for furniture above</div>
+            <div style={{ fontSize: "11px", color: colors.textLight }}>e.g. "sofa", "wooden chair", "lamp"</div>
           </div>
         )}
 
-        {!loading && results.length === 0 && !query && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 280, color: "#ccc", fontSize: 13, gap: 8 }}>
-            <div style={{ fontSize: 32 }}>🔍</div>
-            <div>Search for furniture above</div>
+        {!loading && results.length === 0 && query && !error && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "260px", color: colors.textMuted, fontSize: "13px" }}>
+            No results for "{query}"
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Modal shell ──────────────────────────────────────────────────────────────
+function Modal({ title, onClose, children, wide }) {
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "rgba(61,43,31,0.45)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      zIndex: 200, backdropFilter: "blur(3px)",
+    }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: colors.bgCard, borderRadius: "20px",
+        padding: "28px", width: wide ? "480px" : "380px",
+        maxHeight: "88vh", overflowY: "auto",
+        boxShadow: "0 16px 60px rgba(61,43,31,0.2), 0 4px 12px rgba(0,0,0,0.1)",
+        border: `1px solid ${colors.border}`,
+        fontFamily: "'Inter','Segoe UI',sans-serif",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <span style={{ fontWeight: "700", fontSize: "16px", color: colors.text }}>{title}</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "20px", color: colors.textMuted, lineHeight: 1 }}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab bar ──────────────────────────────────────────────────────────────────
+function TabBar({ tabs, active, onChange }) {
+  return (
+    <div style={{ display: "flex", background: colors.bgSecondary, borderRadius: "10px", padding: "3px", gap: "3px", marginBottom: "18px" }}>
+      {tabs.map(({ id, label }) => (
+        <button key={id} onClick={() => onChange(id)} style={{
+          flex: 1, padding: "7px 0", borderRadius: "8px", border: "none",
+          cursor: "pointer", fontWeight: "600", fontSize: "12px",
+          background: active === id ? "white" : "transparent",
+          color: active === id ? colors.text : colors.textMuted,
+          boxShadow: active === id ? "0 1px 5px rgba(139,90,60,0.12)" : "none",
+          transition: "all 0.15s",
+        }}>{label}</button>
+      ))}
     </div>
   );
 }
@@ -390,7 +416,6 @@ function AddImageModal({ onClose, onAdd }) {
       const size = await loadImageSize(url);
       onAdd(url, size, label);
     } catch {
-      // fallback — use original image if bg removal fails
       const size = await loadImageSize(src);
       onAdd(src, size, label);
     } finally {
@@ -411,101 +436,61 @@ function AddImageModal({ onClose, onAdd }) {
     }
   };
 
-  const handleUrlAdd = async () => {
-    if (!urlInput.trim()) return;
-    await handleSelect(urlInput.trim(), labelInput.trim() || "Image");
-  };
-
-  const tabs = ["search", "upload", "url"];
-  const tabLabels = { search: "🔍 Search", upload: "📁 Upload", url: "🔗 URL" };
-
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0,
-        background: "rgba(0,0,0,0.6)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        zIndex: 200,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "white", borderRadius: 12, padding: 24,
-          width: 440, maxHeight: "85vh", overflowY: "auto",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>Add Furniture</span>
-          <span onClick={onClose} style={{ cursor: "pointer", fontSize: 20, color: "#aaa" }}>×</span>
+    <Modal title="🛋️ Add Furniture" onClose={onClose} wide>
+      {removing && (
+        <div style={{ background: colors.accentLight, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "10px 14px", marginBottom: "14px", fontSize: "13px", color: colors.accentDark, display: "flex", alignItems: "center", gap: "8px" }}>
+          <span>✂️</span> Removing background — this may take a moment...
         </div>
+      )}
 
-        {removing && (
-          <div style={{
-            background: "#f0f7ff", border: "1px solid #c0d8ff",
-            borderRadius: 8, padding: "10px 14px", marginBottom: 14,
-            fontSize: 13, color: "#4f8ef7", display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <span>✂️</span> Removing background... this may take a moment.
+      <TabBar
+        tabs={[{ id: "search", label: "🔍 Search" }, { id: "upload", label: "📁 Upload" }, { id: "url", label: "🔗 URL" }]}
+        active={tab} onChange={setTab}
+      />
+
+      {tab === "search" && <PixabaySearch onSelect={handleSelect} />}
+
+      {tab === "upload" && (
+        <div>
+          <div onClick={() => fileInputRef.current.click()} style={{
+            border: `2px dashed ${colors.border}`, borderRadius: "12px",
+            padding: "40px 20px", textAlign: "center", cursor: "pointer",
+            background: colors.accentLight, transition: "border 0.15s",
+          }}
+            onMouseEnter={(e) => e.currentTarget.style.border = `2px dashed ${colors.accent}`}
+            onMouseLeave={(e) => e.currentTarget.style.border = `2px dashed ${colors.border}`}
+          >
+            <div style={{ fontSize: "40px", marginBottom: "10px" }}>🛋️</div>
+            <div style={{ fontWeight: "600", color: colors.text, marginBottom: "4px" }}>Click to browse files</div>
+            <div style={{ fontSize: "12px", color: colors.textMuted }}>PNG with transparency works best · Background removed automatically</div>
           </div>
-        )}
-
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-          {tabs.map((t) => (
-            <button key={t} onClick={() => setTab(t)} style={{
-              flex: 1, padding: "7px 0", borderRadius: 6, border: "none",
-              cursor: "pointer", fontWeight: 500, fontSize: 12,
-              background: tab === t ? "#4f8ef7" : "#f0f0f0",
-              color: tab === t ? "white" : "#555",
-            }}>{tabLabels[t]}</button>
-          ))}
+          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileChange} style={{ display: "none" }} />
         </div>
+      )}
 
-        {tab === "search" && (
-          <PixabaySearch onSelect={handleSelect} />
-        )}
-
-        {tab === "upload" && (
+      {tab === "url" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div>
-            <div
-              onClick={() => fileInputRef.current.click()}
-              style={{
-                border: "2px dashed #c0d0f0", borderRadius: 8,
-                padding: "32px 16px", textAlign: "center",
-                cursor: "pointer", background: "#f8faff",
-              }}
-            >
-              <div style={{ fontSize: 36, marginBottom: 8 }}>🛋️</div>
-              <div style={{ fontWeight: 500, color: "#555", marginBottom: 4 }}>Click to browse files</div>
-              <div style={{ fontSize: 12, color: "#aaa" }}>Background will be removed automatically</div>
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileChange} style={{ display: "none" }} />
-          </div>
-        )}
-
-        {tab === "url" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <input
-              type="text" placeholder="https://example.com/sofa.png"
-              value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
-              style={{ padding: "9px 12px", borderRadius: 6, border: "1.5px solid #ddd", fontSize: 13, outline: "none" }}
+            <label style={{ fontSize: "12px", fontWeight: "600", color: colors.textMuted, display: "block", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.3px" }}>Image URL</label>
+            <input type="text" placeholder="https://example.com/sofa.png" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} style={input}
+              onFocus={(e) => e.target.style.border = `1.5px solid ${colors.borderFocus}`}
+              onBlur={(e) => e.target.style.border = `1.5px solid ${colors.border}`}
             />
-            <input
-              type="text" placeholder="Label (e.g. Sofa)"
-              value={labelInput} onChange={(e) => setLabelInput(e.target.value)}
-              style={{ padding: "9px 12px", borderRadius: 6, border: "1.5px solid #ddd", fontSize: 13, outline: "none" }}
-            />
-            <button onClick={handleUrlAdd} style={{
-              padding: "9px 0", background: "#4f8ef7", color: "white",
-              border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 500, fontSize: 13,
-            }}>Add + Remove Background</button>
           </div>
-        )}
-      </div>
-    </div>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "600", color: colors.textMuted, display: "block", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.3px" }}>Label (optional)</label>
+            <input type="text" placeholder="e.g. Sofa, Coffee Table" value={labelInput} onChange={(e) => setLabelInput(e.target.value)} style={input}
+              onFocus={(e) => e.target.style.border = `1.5px solid ${colors.borderFocus}`}
+              onBlur={(e) => e.target.style.border = `1.5px solid ${colors.border}`}
+            />
+          </div>
+          <button onClick={() => urlInput.trim() && handleSelect(urlInput.trim(), labelInput.trim() || "Image")} style={{ ...btn("primary"), marginTop: "4px" }}>
+            Add + Remove Background →
+          </button>
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -524,62 +509,66 @@ function SetBgModal({ onClose, onSet }) {
   };
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: 12, padding: 24, width: 360, boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>Set Room Background</span>
-          <span onClick={onClose} style={{ cursor: "pointer", fontSize: 20, color: "#aaa" }}>×</span>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          {["upload", "url"].map((t) => (
-            <button key={t} onClick={() => setTab(t)} style={{
-              flex: 1, padding: "7px 0", borderRadius: 6, border: "none",
-              cursor: "pointer", fontWeight: 500, fontSize: 13,
-              background: tab === t ? "#4f8ef7" : "#f0f0f0",
-              color: tab === t ? "white" : "#555",
-            }}>{t === "upload" ? "📁 Upload" : "🔗 URL"}</button>
-          ))}
-        </div>
-        {tab === "upload" && (
-          <div>
-            <div onClick={() => fileInputRef.current.click()} style={{ border: "2px dashed #c0d0f0", borderRadius: 8, padding: "32px 16px", textAlign: "center", cursor: "pointer", background: "#f8faff" }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>🏠</div>
-              <div style={{ fontWeight: 500, color: "#555", marginBottom: 4 }}>Upload room photo</div>
-              <div style={{ fontSize: 12, color: "#aaa" }}>JPG or PNG recommended</div>
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
+    <Modal title="🏠 Set Room Background" onClose={onClose}>
+      <TabBar tabs={[{ id: "upload", label: "📁 Upload" }, { id: "url", label: "🔗 URL" }]} active={tab} onChange={setTab} />
+
+      {tab === "upload" && (
+        <div>
+          <div onClick={() => fileInputRef.current.click()} style={{
+            border: `2px dashed ${colors.border}`, borderRadius: "12px",
+            padding: "40px 20px", textAlign: "center", cursor: "pointer",
+            background: colors.accentLight,
+          }}
+            onMouseEnter={(e) => e.currentTarget.style.border = `2px dashed ${colors.accent}`}
+            onMouseLeave={(e) => e.currentTarget.style.border = `2px dashed ${colors.border}`}
+          >
+            <div style={{ fontSize: "40px", marginBottom: "10px" }}>🏠</div>
+            <div style={{ fontWeight: "600", color: colors.text, marginBottom: "4px" }}>Upload room photo</div>
+            <div style={{ fontSize: "12px", color: colors.textMuted }}>JPG or PNG recommended</div>
           </div>
-        )}
-        {tab === "url" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <input type="text" placeholder="https://example.com/living-room.jpg" value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
-              style={{ padding: "9px 12px", borderRadius: 6, border: "1.5px solid #ddd", fontSize: 13, outline: "none" }} />
-            <button onClick={() => { if (urlInput.trim()) { onSet(urlInput.trim()); onClose(); } }}
-              style={{ padding: "9px 0", background: "#4f8ef7", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 500, fontSize: 13 }}>
-              Set as Background
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
+        </div>
+      )}
+
+      {tab === "url" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <input type="text" placeholder="https://example.com/living-room.jpg" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} style={input}
+            onFocus={(e) => e.target.style.border = `1.5px solid ${colors.borderFocus}`}
+            onBlur={(e) => e.target.style.border = `1.5px solid ${colors.border}`}
+          />
+          <button onClick={() => { if (urlInput.trim()) { onSet(urlInput.trim()); onClose(); } }} style={btn("primary")}>
+            Set as Background →
+          </button>
+        </div>
+      )}
+    </Modal>
   );
 }
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
-export default function Moodboard() {
-  const [items, setItems] = useState([]);
+export default function Moodboard({ initialBackground, initialItems, onBackgroundChange, onItemsChange }) {
+  const [items, setItems] = useState(initialItems || []);
   const [selectedId, setSelectedId] = useState(null);
   const [gridSize, setGridSize] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBgModal, setShowBgModal] = useState(false);
-  const [background, setBackground] = useState(null);
+  const [background, setBackground] = useState(initialBackground || null);
 
-  const handleDrag = (id, pos) => setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...pos } : i));
-  const handleResize = (id, size) => setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...size } : i));
-  const handleDelete = (id) => { setItems((prev) => prev.filter((i) => i.id !== id)); setSelectedId(null); };
+  const updateItems = (fn) => {
+    setItems((prev) => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      onItemsChange?.(next);
+      return next;
+    });
+  };
+
+  const updateBg = (val) => { setBackground(val); onBackgroundChange?.(val); };
+  const handleDrag = (id, pos) => updateItems((prev) => prev.map((i) => i.id === id ? { ...i, ...pos } : i));
+  const handleResize = (id, size) => updateItems((prev) => prev.map((i) => i.id === id ? { ...i, ...size } : i));
+  const handleDelete = (id) => { updateItems((prev) => prev.filter((i) => i.id !== id)); setSelectedId(null); };
 
   const handleAddImage = (src, size, label) => {
-    setItems((prev) => [...prev, {
+    updateItems((prev) => [...prev, {
       id: nextId++, src, label,
       x: snap(60 + Math.random() * 160, gridSize || 1),
       y: snap(60 + Math.random() * 100, gridSize || 1),
@@ -589,32 +578,39 @@ export default function Moodboard() {
 
   const showGrid = gridSize >= 4;
   const gridStyle = showGrid ? {
-    backgroundImage: `linear-gradient(to right, rgba(79,142,247,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(79,142,247,0.15) 1px, transparent 1px)`,
+    backgroundImage: `linear-gradient(to right, rgba(196,122,69,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(196,122,69,0.1) 1px, transparent 1px)`,
     backgroundSize: `${gridSize}px ${gridSize}px`,
   } : {};
 
   return (
-    <div style={{ fontFamily: "sans-serif", height: "100vh", display: "flex", flexDirection: "column", background: "#1a1a2e" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
       {/* Toolbar */}
-      <div style={{ padding: "10px 16px", background: "#16213e", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid #0f3460", flexWrap: "wrap" }}>
-        <span style={{ color: "white", fontWeight: 700, fontSize: 15 }}>🛋️ Room Planner</span>
-        <button onClick={() => setShowBgModal(true)} style={{ background: "#0f3460", color: "#ccc", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>🏠 Set Room</button>
-        <button onClick={() => setShowAddModal(true)} style={{ background: "#4f8ef7", color: "white", border: "none", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>+ Add Furniture</button>
+      <div style={{
+        padding: "10px 16px", background: colors.toolbar,
+        display: "flex", alignItems: "center", gap: "10px",
+        borderBottom: `1px solid ${colors.toolbarBorder}`,
+        flexWrap: "wrap",
+      }}>
+        <button onClick={() => setShowBgModal(true)} style={btn("ghost", true)}>🏠 Set Room</button>
+        <button onClick={() => setShowAddModal(true)} style={btn("primary", true)}>+ Add Furniture</button>
         {background && (
-          <button onClick={() => setBackground(null)} style={{ background: "transparent", color: "#888", border: "1px solid #333", padding: "5px 10px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>✕ Clear Room</button>
+          <button onClick={() => updateBg(null)} style={{ ...btn("ghost", true), color: "#e8a87c", borderColor: "#5c3d2e" }}>✕ Clear Room</button>
         )}
         <div style={{ marginLeft: "auto" }}>
           <DraggableGridControl gridSize={gridSize} onChange={setGridSize} />
         </div>
-        <span style={{ color: "#555", fontSize: 12 }}>{items.length} item{items.length !== 1 ? "s" : ""}</span>
+        <span style={{ color: "#6b4a35", fontSize: "12px" }}>{items.length} item{items.length !== 1 ? "s" : ""}</span>
       </div>
 
       {/* Canvas */}
       <div
         style={{
           position: "relative", flex: 1, overflow: "hidden",
-          background: background ? "transparent" : "#f7f7f5",
-          ...(!background ? { backgroundImage: "radial-gradient(circle, #ccc 1px, transparent 1px)", backgroundSize: "24px 24px" } : {}),
+          background: background ? "transparent" : colors.bg,
+          ...(!background ? {
+            backgroundImage: "radial-gradient(circle, #d4b8a0 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          } : {}),
           ...gridStyle,
         }}
         onClick={() => setSelectedId(null)}
@@ -624,6 +620,7 @@ export default function Moodboard() {
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", zIndex: 0 }}
           />
         )}
+
         {items.map((item) => (
           <FurnitureItem
             key={item.id} item={item}
@@ -631,17 +628,26 @@ export default function Moodboard() {
             isSelected={selectedId === item.id} onSelect={setSelectedId} gridSize={gridSize}
           />
         ))}
+
         {items.length === 0 && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: "#aaa", fontSize: 14, pointerEvents: "none", zIndex: 5 }}>
-            <div style={{ fontSize: 48 }}>🛋️</div>
-            <div>{background ? 'Click "+ Add Furniture" to place items' : "Set a room background, then add furniture"}</div>
-            <div style={{ fontSize: 12, color: "#888" }}>Drag the grid slider to snap furniture to a grid</div>
+          <div style={{
+            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: "12px",
+            pointerEvents: "none", zIndex: 5,
+          }}>
+            <div style={{ fontSize: "56px" }}>🛋️</div>
+            <div style={{ fontSize: "15px", color: colors.textMuted, fontWeight: "500" }}>
+              {background ? 'Click "+ Add Furniture" to start decorating' : "Start by setting a room background"}
+            </div>
+            <div style={{ fontSize: "12px", color: colors.textLight }}>
+              Drag the grid slider to snap furniture into place
+            </div>
           </div>
         )}
       </div>
 
       {showAddModal && <AddImageModal onClose={() => setShowAddModal(false)} onAdd={handleAddImage} />}
-      {showBgModal && <SetBgModal onClose={() => setShowBgModal(false)} onSet={setBackground} />}
+      {showBgModal && <SetBgModal onClose={() => setShowBgModal(false)} onSet={updateBg} />}
     </div>
   );
 }

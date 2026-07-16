@@ -1,4 +1,5 @@
 import { useShoppingList } from "../../context/ShoppingListContext";
+import { sanitizeHref, sanitizeImageSrc } from "../../lib/security";
 import "./ShoppingListPanel.css";
 
 function ShoppingListItem({ row, onUpdateQuantity, onRemove }) {
@@ -8,7 +9,7 @@ function ShoppingListItem({ row, onUpdateQuantity, onRemove }) {
   return (
     <div className="shop-item">
       <div className="shop-item__thumb">
-        <img src={product.image_url} alt={product.name} onError={(e) => { e.target.style.visibility = "hidden"; }} />
+        <img src={sanitizeImageSrc(product.image_url)} alt={product.name} onError={(e) => { e.target.style.visibility = "hidden"; }} />
       </div>
 
       <div className="shop-item__info">
@@ -21,7 +22,7 @@ function ShoppingListItem({ row, onUpdateQuantity, onRemove }) {
 
         <div className="shop-item__bottom-row">
           <span className="shop-item__price">${Number(product.price).toFixed(2)}</span>
-          <a className="shop-item__buy" href={product.product_url} target="_blank" rel="noopener noreferrer">
+          <a className="shop-item__buy" href={sanitizeHref(product.product_url)} target="_blank" rel="noopener noreferrer">
             View →
           </a>
         </div>

@@ -15,9 +15,9 @@ export function loadImageSize(src, maxW = 200) {
 }
 
 export async function removeImageBackground(src) {
-  const { removeBackground } = await import(
-    "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm"
-  );
+  // Use the locally installed package instead of a CDN import,
+  // to avoid supply-chain risk and CSP violations.
+  const { removeBackground } = await import("@imgly/background-removal");
   const blob = await removeBackground(src);
   return URL.createObjectURL(blob);
 }

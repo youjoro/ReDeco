@@ -52,8 +52,11 @@ export default function SearchTab({ onAddItem }) {
         <input
           className="search-tab__input"
           type="text" placeholder="sofa, chair, lamp…"
-          value={query} onChange={(e) => setQuery(e.target.value)}
+          value={query} onChange={(e) => setQuery(e.target.value.slice(0, 100))}
           onKeyDown={(e) => e.key === "Enter" && search()}
+          maxLength={100}
+          autoComplete="off"
+          spellCheck={false}
         />
         <button className="search-tab__go" onClick={() => search()} disabled={loading}>
           {loading ? "…" : "↵"}

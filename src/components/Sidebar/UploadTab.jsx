@@ -1,19 +1,33 @@
 import { useRef, useState } from "react";
 import { loadImageSize, removeImageBackground } from "../../lib/imageUtils";
+import { validateImageFile } from "../../lib/security";
 import "./UploadTab.css";
 
 export default function UploadTab({ onAddItem }) {
   const fileRef = useRef(null);
   const [adding, setAdding] = useState(false);
+  const [error,  setError]  = useState("");
 
   const handleFiles = async (e) => {
+    setError("");
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
     setAdding(true);
-    for (const file of Array.from(e.target.files)) {
+    for (const file of files) {
+      // Validate type and size before processing
+      const check = await validateImageFile(file);
+      if (!check.ok) {
+        setError(check.reason);
+        continue;
+      }
+
       const src = await new Promise((res) => {
         const r = new FileReader();
         r.onload = (ev) => res(ev.target.result);
         r.readAsDataURL(file);
       });
+
       try {
         const cleaned = await removeImageBackground(src);
         const size    = await loadImageSize(cleaned);
@@ -34,10 +48,24 @@ export default function UploadTab({ onAddItem }) {
       <div className="upload-tab__drop" onClick={() => fileRef.current.click()}>
         <div className="upload-tab__drop-icon">🛋️</div>
         <div className="upload-tab__drop-title">Click to browse files</div>
-        <div className="upload-tab__drop-sub">Background removed automatically · PNG works best</div>
+        <div className="upload-tab__drop-sub">Background removed automatically · PNG works best · Max 10 MB</div>
       </div>
 
-      <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFiles} style={{ display: "none" }} />
+      {/* accept is a UX hint only — real validation happens in handleFiles */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+        multiple
+        onChange={handleFiles}
+        style={{ display: "none" }}
+      />
+
+      {error && (
+        <div className="upload-tab__notice upload-tab__notice--error">
+          <span>⚠️</span> {error}
+        </div>
+      )}
 
       {adding && (
         <div className="upload-tab__notice">

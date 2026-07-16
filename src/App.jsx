@@ -148,7 +148,7 @@ export default function App() {
   if (authLoading) return (
     <div className="app__loading">
       <div style={{ textAlign: "center" }}>
-        <span className="app__loading-icon">🛋️</span>
+        <span className="app__loading-icon">🪴</span>
         <p className="app__loading-text">Loading…</p>
       </div>
     </div>

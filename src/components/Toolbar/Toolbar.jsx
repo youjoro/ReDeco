@@ -6,8 +6,8 @@ export default function Toolbar({ user, roomName, saving, saveMsg, onSave, onRen
   return (
     <div className="toolbar">
       <div className="toolbar__brand">
-        <span className="toolbar__brand-icon">🛋️</span>
-        <span className="toolbar__brand-name">Room Planner</span>
+        <span className="toolbar__brand-icon">🪴</span>
+        <span className="toolbar__brand-name">ReDeco</span>
       </div>
 
       <div className="toolbar__divider" />

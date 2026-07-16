@@ -307,7 +307,7 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
 
             {!loading && results.length === 0 && !query && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8, color: C.textFaint }}>
-                <div style={{ fontSize: 32 }}>🛋️</div>
+                <div style={{ fontSize: 32 }}>🪴</div>
                 <div style={{ fontSize: 12, textAlign: "center" }}>Search for furniture to add to your room</div>
               </div>
             )}
@@ -379,7 +379,7 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
             onMouseEnter={(e) => e.currentTarget.style.borderColor = C.accent}
             onMouseLeave={(e) => e.currentTarget.style.borderColor = C.border}
           >
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🛋️</div>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🪴</div>
             <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 3 }}>Upload image</div>
             <div style={{ fontSize: 11, color: C.textSub }}>Background removed automatically</div>
           </div>
@@ -552,7 +552,7 @@ export default function Moodboard({ initialBackground, initialItems, onBackgroun
               position: "absolute", inset: 0, display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center", gap: 12, pointerEvents: "none", zIndex: 5,
             }}>
-              <div style={{ fontSize: 52 }}>🛋️</div>
+              <div style={{ fontSize: 52 }}>🪴</div>
               <div style={{ fontSize: 14, color: C.textSub, fontWeight: 500 }}>
                 {background ? "Search for furniture in the sidebar to start decorating" : "Set a room background in the Room tab, then add furniture"}
               </div>

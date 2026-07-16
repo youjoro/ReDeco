@@ -46,7 +46,7 @@ export default function UploadTab({ onAddItem }) {
       <p className="upload-tab__label">Upload Furniture Image</p>
 
       <div className="upload-tab__drop" onClick={() => fileRef.current.click()}>
-        <div className="upload-tab__drop-icon">🛋️</div>
+        <div className="upload-tab__drop-icon">🪴</div>
         <div className="upload-tab__drop-title">Click to browse files</div>
         <div className="upload-tab__drop-sub">Background removed automatically · PNG works best · Max 10 MB</div>
       </div>

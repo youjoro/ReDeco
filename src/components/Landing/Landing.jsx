@@ -1,7 +1,7 @@
 import "./Landing.css";
 
 const MOCK_ITEMS = [
-  { icon: "🛋️", top: "58%", left: "8%",  w: 34, h: 26 },
+  { icon: "🪴", top: "58%", left: "8%",  w: 34, h: 26 },
   { icon: "🪑", top: "40%", left: "62%", w: 22, h: 22 },
   { icon: "🛏️", top: "20%", left: "30%", w: 30, h: 22 },
   { icon: "🪴", top: "62%", left: "78%", w: 18, h: 22 },
@@ -28,8 +28,8 @@ export default function Landing({ onGetStarted, onLogin }) {
       {/* Nav */}
       <div className="landing__nav">
         <div className="landing__nav-brand">
-          <span className="landing__nav-icon">🛋️</span>
-          Room Planner
+          <span className="landing__nav-icon">🪴</span>
+          ReDeco
         </div>
         <div className="landing__nav-actions">
           <button className="landing__nav-btn landing__nav-btn--ghost" onClick={onLogin}>Log In</button>
@@ -112,7 +112,7 @@ export default function Landing({ onGetStarted, onLogin }) {
         <button className="landing__cta-primary" onClick={onGetStarted}>Create your first room →</button>
       </div>
 
-      <div className="landing__footer">© 2026 Room Planner · Made for anyone furnishing a space</div>
+      <div className="landing__footer">© 2026 ReDeco · Made for anyone furnishing a space</div>
     </div>
   );
 }

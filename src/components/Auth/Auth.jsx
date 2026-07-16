@@ -36,8 +36,8 @@ export default function Auth({ onAuth, initialTab = "login", onBack }) {
         )}
 
         <div className="auth-logo">
-          <span className="auth-logo__icon">🛋️</span>
-          <p className="auth-logo__title">Room Planner</p>
+          <span className="auth-logo__icon">🪴</span>
+          <p className="auth-logo__title">ReDeco</p>
           <p className="auth-logo__sub">
             {tab === "login" ? "Welcome back — sign in to continue" : "Create your account to get started"}
           </p>

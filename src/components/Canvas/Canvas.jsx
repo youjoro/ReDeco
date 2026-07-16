@@ -63,7 +63,7 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
 
         {items.length === 0 && (
           <div className="canvas-empty">
-            <span className="canvas-empty__icon">🛋️</span>
+            <span className="canvas-empty__icon">🪴</span>
             <span className="canvas-empty__text">
               {background
                 ? "Search for furniture in the sidebar to start decorating"

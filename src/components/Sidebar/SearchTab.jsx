@@ -81,7 +81,7 @@ export default function SearchTab({ onAddItem }) {
 
         {!loading && results.length === 0 && !query && (
           <div className="search-tab__empty">
-            <span className="search-tab__empty-icon">🛋️</span>
+            <span className="search-tab__empty-icon">🪴</span>
             <span className="search-tab__empty-text">Search for furniture to add to your room</span>
           </div>
         )}

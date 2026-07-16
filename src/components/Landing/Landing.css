@@ -175,9 +175,9 @@
   border: 1px solid var(--border);
   box-shadow:
     0 2px 4px rgba(0,0,0,0.04),
-    0 12px 40px rgba(0,0,0,0.08);
+    0 12px 40px rgba(0,0,0,0.10);
   aspect-ratio: 4 / 3;
-  background: var(--sidebar);
+  background: #e8e4de;
 }
 
 .landing__mock-chrome {
@@ -198,38 +198,42 @@
 .landing__mock-room {
   position: relative;
   height: calc(100% - 28px);
-  background: #f0ede8;
   overflow: hidden;
 }
 
-/* Subtle perspective wall lines */
-.landing__mock-wall {
+/* Real room photo fills the background */
+.landing__mock-bg {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to bottom, #e8e4de 0%, #f0ede8 35%);
-  border-bottom: 1.5px solid rgba(0,0,0,0.07);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
-.landing__mock-grid {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, rgba(0,0,0,0.10) 1px, transparent 1px);
-  background-size: 20px 20px;
-  pointer-events: none;
-}
-
+/* Furniture item cards — percentage widths so they scale on every screen */
 .landing__mock-item {
   position: absolute;
-  background: rgba(255,255,255,0.85);
-  border: 1.5px solid var(--accent);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.10);
-  backdrop-filter: blur(2px);
+  background: rgba(255,255,255,0.92);
+  border: 2px solid rgba(255,255,255,0.95);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.18),
+    0 0 0 1.5px var(--accent);
+  cursor: grab;
+  /* height is driven by the image aspect ratio */
+}
+
+.landing__mock-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  /* Fixed height so cards look like draggable tiles */
+  max-height: 80px;
 }
 
 /* ══════════════════════════════════════════

@@ -24,11 +24,31 @@ const STEPS = [
   { num: "3", title: "Arrange freely", text: "Drag, resize, and snap until it feels exactly right." },
 ];
 
+// Unsplash images — free to use under the Unsplash License
+const ROOM_BG =
+  "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=900&q=80";
+
 const MOCK_ITEMS = [
-  { icon: "🛋️", top: "52%", left: "18%", w: 120, h: 70 },
-  { icon: "🪴", top: "30%", left: "72%", w: 52, h: 64 },
-  { icon: "🪑", top: "55%", left: "64%", w: 64, h: 64 },
-  { icon: "🖼️", top: "14%", left: "22%", w: 72, h: 56 },
+  {
+    src: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=320&q=80",
+    alt: "Modern sofa",
+    top: "50%", left: "8%", w: "40%",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=180&q=80",
+    alt: "Potted plant",
+    top: "8%", left: "70%", w: "20%",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=200&q=80",
+    alt: "Accent chair",
+    top: "52%", left: "68%", w: "22%",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1532372320572-cda25653a26d?auto=format&fit=crop&w=220&q=80",
+    alt: "Coffee table",
+    top: "10%", left: "8%", w: "28%",
+  },
 ];
 
 export default function Landing({ onGetStarted, onLogin }) {
@@ -79,17 +99,22 @@ export default function Landing({ onGetStarted, onLogin }) {
             <span className="landing__mock-dot" />
           </div>
           <div className="landing__mock-room">
-            <div className="landing__mock-wall" />
+            <img
+              className="landing__mock-bg"
+              src={ROOM_BG}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
             {MOCK_ITEMS.map((item, i) => (
               <div
                 key={i}
                 className="landing__mock-item"
-                style={{ top: item.top, left: item.left, width: item.w, height: item.h }}
+                style={{ top: item.top, left: item.left, width: item.w }}
               >
-                {item.icon}
+                <img src={item.src} alt={item.alt} loading="lazy" decoding="async" />
               </div>
             ))}
-            <div className="landing__mock-grid" />
           </div>
         </div>
       </section>

@@ -20,35 +20,92 @@ html, body, #root {
   -webkit-user-select: none;
 }
 
-/* ── Design tokens ── */
+/* ── Design tokens — Light theme (default) ── */
 :root {
-  /* Neutral monochromatic base */
+  color-scheme: light;
+
+  /* Surfaces */
   --bg:           #f4f4f5;
   --sidebar:      #ffffff;
   --sidebar-bdr:  #e4e4e7;
   --toolbar:      #35353b;
   --toolbar-bdr:  #48484f;
+  --canvas:       #ececee;
+  --canvas-dot:   #c1c1c4;
+  --card-bg:      #ffffff;
+
+  /* Text */
   --text:         #18181b;
   --text-sub:     #71717a;
   --text-faint:   #a1a1aa;
+
+  /* Borders & inputs */
   --border:       #e4e4e7;
   --input-bg:     #fafafa;
-  --canvas:       #ececee;
 
-  /* Single accent family (warm amber) — used for every pop of color */
-  --accent:        #e8823c;
-  --accent-dark:   #c8611f;
-  --accent-light:  #fdeee0;
-  --accent-2:      #f4a35c; /* lighter mid-stop for gradients */
+  /* Accent — teal */
+  --accent:        #0d9488;
+  --accent-dark:   #0f766e;
+  --accent-light:  #ccfbf1;
+  --accent-2:      #14b8a6;
+  --accent-glow:   rgba(13,148,136,0.25);
+  --accent-shadow: rgba(13,148,136,0.30);
 
   /* Status */
   --danger:    #dc2626;
   --danger-bg: #fef2f2;
   --success:   #16a34a;
 
-  /* Gradients — reused across buttons, headers, empty states */
+  /* Gradients */
   --gradient-accent:  linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 55%, var(--accent-dark) 100%);
   --gradient-dark:    linear-gradient(180deg, #48484f 0%, #302f34 100%);
   --gradient-surface: linear-gradient(155deg, #ffffff 0%, #f4f4f5 100%);
   --gradient-page:    linear-gradient(135deg, #f8f8f9 0%, #ececee 45%, #e4e4e7 100%);
+  --gradient-canvas-empty: linear-gradient(145deg, #ffffff 0%, #e4e4e7 100%);
+
+  /* Auth glow blobs */
+  --auth-glow-1: rgba(13,148,136,0.14);
+  --auth-glow-2: rgba(24,24,27,0.05);
+}
+
+/* ── Dark theme ── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg:           #18181b;
+  --sidebar:      #1c1c22;
+  --sidebar-bdr:  #2e2e38;
+  --canvas:       #27272a;
+  --canvas-dot:   #3f3f46;
+  --card-bg:      #2a2a32;
+
+  /* Text */
+  --text:         #fafafa;
+  --text-sub:     #a1a1aa;
+  --text-faint:   #71717a;
+
+  /* Borders & inputs */
+  --border:       #3f3f46;
+  --input-bg:     #27272a;
+
+  /* Accent stays teal — slightly brighter for dark surfaces */
+  --accent:        #14b8a6;
+  --accent-dark:   #0d9488;
+  --accent-light:  rgba(13,148,136,0.18);
+  --accent-2:      #2dd4bf;
+  --accent-glow:   rgba(20,184,166,0.20);
+  --accent-shadow: rgba(20,184,166,0.25);
+
+  /* Status */
+  --danger-bg: rgba(220,38,38,0.12);
+
+  /* Gradients */
+  --gradient-surface: linear-gradient(155deg, #2a2a32 0%, #1c1c22 100%);
+  --gradient-page:    linear-gradient(135deg, #18181b 0%, #1c1c22 50%, #27272a 100%);
+  --gradient-canvas-empty: linear-gradient(145deg, #2a2a32 0%, #1c1c22 100%);
+
+  /* Auth glow blobs */
+  --auth-glow-1: rgba(13,148,136,0.12);
+  --auth-glow-2: rgba(0,0,0,0.25);
 }

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
+import { ThemeProvider } from './context/ThemeContext'
 import './index.css'
 import App from './App'
 
@@ -64,7 +65,9 @@ root.render(
         <ErrorFallback error={error as Error} resetError={resetError} />
       )}
     >
-      <App />
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
     </Sentry.ErrorBoundary>
   </StrictMode>
 )

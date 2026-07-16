@@ -113,6 +113,22 @@
   gap: 8px;
 }
 
+.toolbar__theme-toggle {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--toolbar-bdr);
+  background: rgba(255,255,255,0.06);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.toolbar__theme-toggle:hover { background: rgba(255,255,255,0.14); }
+
 .toolbar__email {
   color: #71717a;
   font-size: 11px;

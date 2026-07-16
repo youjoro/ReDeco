@@ -1,8 +1,10 @@
 import { signOut } from "../../lib/supabase";
 import FeedbackButton from "../Feedback/FeedbackButton";
+import { useTheme } from "../../context/ThemeContext";
 import "./Toolbar.css";
 
 export default function Toolbar({ user, roomName, saving, saveMsg, onSave, onRename, onOpenRooms, onOpenShoppingList, shoppingCount = 0 }) {
+  const { theme, toggle } = useTheme();
   return (
     <div className="toolbar">
       <div className="toolbar__brand">
@@ -36,6 +38,14 @@ export default function Toolbar({ user, roomName, saving, saveMsg, onSave, onRen
       )}
 
       <div className="toolbar__right">
+        <button
+          className="toolbar__theme-toggle"
+          onClick={toggle}
+          aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+        >
+          {theme === "light" ? "🌙" : "☀️"}
+        </button>
         <FeedbackButton user={user} />
         <span className="toolbar__email">{user?.email}</span>
         <button className="toolbar__btn toolbar__btn--ghost" onClick={signOut}>

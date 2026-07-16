@@ -20,7 +20,7 @@
 .feedback-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.50);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
@@ -31,12 +31,12 @@
 
 /* ── Modal card ── */
 .feedback-modal {
-  background: #1c1c22;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 14px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35);
   overflow: hidden;
 }
 
@@ -45,30 +45,30 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid var(--border);
 }
 .feedback-modal__title {
-  color: #fafafa;
+  color: var(--text);
   font-weight: 700;
   font-size: 14px;
 }
 .feedback-modal__close {
   background: none;
   border: none;
-  color: #71717a;
+  color: var(--text-faint);
   font-size: 14px;
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 5px;
   transition: color 0.15s;
 }
-.feedback-modal__close:hover { color: #fafafa; }
+.feedback-modal__close:hover { color: var(--text); }
 
 /* ── Form body ── */
 form { padding: 16px 20px 20px; }
 
 .feedback-modal__hint {
-  color: #71717a;
+  color: var(--text-sub);
   font-size: 12px;
   margin: 0 0 12px;
   line-height: 1.5;
@@ -76,10 +76,10 @@ form { padding: 16px 20px 20px; }
 
 .feedback-modal__textarea {
   width: 100%;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #fafafa;
+  color: var(--text);
   font-family: inherit;
   font-size: 13px;
   padding: 10px 12px;
@@ -90,12 +90,12 @@ form { padding: 16px 20px 20px; }
 }
 .feedback-modal__textarea:focus {
   outline: none;
-  border-color: rgba(99,102,241,0.6);
+  border-color: var(--accent);
 }
 .feedback-modal__textarea:disabled { opacity: 0.5; }
 
 .feedback-modal__error {
-  color: #f87171;
+  color: var(--danger);
   font-size: 12px;
   margin: 8px 0 0;
 }
@@ -107,7 +107,7 @@ form { padding: 16px 20px 20px; }
   margin-top: 12px;
 }
 .feedback-modal__charcount {
-  color: #52525b;
+  color: var(--text-faint);
   font-size: 11px;
 }
 .feedback-modal__submit {
@@ -135,7 +135,7 @@ form { padding: 16px 20px 20px; }
 }
 .feedback-modal__success span { font-size: 32px; }
 .feedback-modal__success p {
-  color: #a1a1aa;
+  color: var(--text-sub);
   font-size: 13px;
   margin: 12px 0 0;
 }

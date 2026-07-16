@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@imgly/background-removal": "^1.7.0",
-    "@supabase/supabase-js": "^2.110.1",
+    "@supabase/supabase-js": "^2.110.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "recharts": "^3.8.1"

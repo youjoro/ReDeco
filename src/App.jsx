@@ -1,87 +1,135 @@
-import { useState, useEffect } from "react";
-import Moodboard from "./Moodboard";
-import Auth from "./Auth";
-import RoomManager from "./RoomManager";
-import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./supabase";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Landing            from "./components/Landing/Landing";
+import Auth               from "./components/Auth/Auth";
+import Toolbar             from "./components/Toolbar/Toolbar";
+import Sidebar             from "./components/Sidebar/Sidebar";
+import Canvas               from "./components/Canvas/Canvas";
+import RoomManager          from "./components/RoomManager/RoomManager";
+import ShoppingListPanel    from "./components/ShoppingList/ShoppingListPanel";
+import { ShoppingListProvider, useShoppingList } from "./context/ShoppingListContext";
+import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./lib/supabase";
+import { snap } from "./lib/snapGrid";
+import { loadImageSize } from "./lib/imageUtils";
+import "./App.css";
 
-const colors = {
-  toolbar: "#3d2b1f", toolbarBorder: "#5c3d2e",
-  accent: "#c47a45", accentDark: "#a05a2c",
-  text: "#fdf6f0", textMuted: "#c9a98a", textDim: "#6b4a35",
-};
+let nextId = 1;
 
-const toolbarBtn = (variant = "ghost") => ({
-  padding: "5px 12px", borderRadius: "8px", border: "none",
-  cursor: "pointer", fontWeight: "600", fontSize: "12px",
-  transition: "all 0.15s",
-  ...(variant === "primary" && {
-    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
-    color: "white", boxShadow: "0 2px 8px rgba(160,90,44,0.3)",
-  }),
-  ...(variant === "ghost" && {
-    background: "transparent", color: colors.textMuted,
-    border: "1px solid #5c3d2e",
-  }),
-  ...(variant === "muted" && {
-    background: "rgba(255,255,255,0.06)", color: colors.textDim,
-    border: "1px solid #4a3020",
-  }),
-});
+// ── Auto logout config ────────────────────────────────────────────────────────
+const INACTIVE_LIMIT_MS = 2 * 60 * 60 * 1000; // 2 hours
+const WARN_BEFORE_MS    = 2 * 60 * 1000;       // warn 2 mins before logout
+const ACTIVITY_EVENTS   = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"];
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user,        setUser]        = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [showRooms, setShowRooms] = useState(false);
+  const [showRooms,   setShowRooms]   = useState(false);
   const [currentRoom, setCurrentRoom] = useState({ id: null, name: "Untitled Room" });
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState("");
-  const [background, setBackground] = useState(null);
-  const [items, setItems] = useState([]);
+  const [saving,      setSaving]      = useState(false);
+  const [saveMsg,     setSaveMsg]     = useState("");
+  const [background,  setBackground]  = useState(null);
+  const [items,       setItems]       = useState([]);
+  const [sessionWarn, setSessionWarn] = useState(false); // show warning banner
+  const [view,        setView]        = useState("landing"); // "landing" | "auth"
+  const [authTab,     setAuthTab]     = useState("login");   // which tab Auth opens on
+  const [showShoppingList, setShowShoppingList] = useState(false);
+
+  const logoutTimer = useRef(null);
+  const warnTimer   = useRef(null);
+
+  // ── Reset both timers on any user activity ────────────────────────────────
+  const resetTimers = useCallback(() => {
+    setSessionWarn(false);
+    clearTimeout(logoutTimer.current);
+    clearTimeout(warnTimer.current);
+
+    // Show warning 2 mins before logout
+    warnTimer.current = setTimeout(() => {
+      setSessionWarn(true);
+    }, INACTIVE_LIMIT_MS - WARN_BEFORE_MS);
+
+    // Auto sign out after inactivity limit
+    logoutTimer.current = setTimeout(async () => {
+      setSessionWarn(false);
+      await signOut();
+      setUser(null);
+    }, INACTIVE_LIMIT_MS);
+  }, []);
+
+  // ── Start/stop activity listeners when user logs in/out ───────────────────
+  useEffect(() => {
+    if (!user) {
+      clearTimeout(logoutTimer.current);
+      clearTimeout(warnTimer.current);
+      ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, resetTimers));
+      return;
+    }
+    resetTimers();
+    ACTIVITY_EVENTS.forEach((e) => window.addEventListener(e, resetTimers, { passive: true }));
+    return () => {
+      clearTimeout(logoutTimer.current);
+      clearTimeout(warnTimer.current);
+      ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, resetTimers));
+    };
+  }, [user, resetTimers]);
 
   useEffect(() => {
-    getUser().then((u) => { setUser(u); setAuthLoading(false); });
+    getUser()
+      .then((u) => { setUser(u); })
+      .catch(() => {})
+      .finally(() => setAuthLoading(false));
+
     const { data: { subscription } } = onAuthChange((u) => setUser(u));
     return () => subscription.unsubscribe();
   }, []);
 
+  // ── Add item from sidebar ──
+  const handleAddItem = (src, size, label) => {
+    setItems((prev) => [...prev, {
+      id: nextId++, src, label,
+      x: snap(80 + Math.random() * 200, 0),
+      y: snap(60 + Math.random() * 120, 0),
+      width: size.width, height: size.height,
+    }]);
+  };
+
+  // ── Save to Supabase ──
   const handleSave = async () => {
     setSaving(true); setSaveMsg("");
     try {
-      const uploadedItems = await Promise.all(
-        items.map(async (item) => {
-          if (item.src.startsWith("data:") || item.src.startsWith("blob:")) {
-            try {
-              const res = await fetch(item.src);
-              const blob = await res.blob();
-              const file = new File([blob], `item-${item.id}.png`, { type: blob.type });
-              const url = await uploadBase64Image(file, "furniture");
-              return { ...item, src: url };
-            } catch { return item; }
-          }
-          return item;
-        })
-      );
+      const uploadedItems = await Promise.all(items.map(async (item) => {
+        if (item.src.startsWith("data:") || item.src.startsWith("blob:")) {
+          try {
+            const res  = await fetch(item.src);
+            const blob = await res.blob();
+            const url  = await uploadBase64Image(new File([blob], `item-${item.id}.png`, { type: blob.type }), "furniture");
+            return { ...item, src: url };
+          } catch { return item; }
+        }
+        return item;
+      }));
 
       let bgUrl = background;
       if (background && (background.startsWith("data:") || background.startsWith("blob:"))) {
         try {
-          const res = await fetch(background);
+          const res  = await fetch(background);
           const blob = await res.blob();
-          const file = new File([blob], `bg-${Date.now()}.jpg`, { type: blob.type });
-          bgUrl = await uploadBase64Image(file, "backgrounds");
+          bgUrl = await uploadBase64Image(new File([blob], `bg.jpg`, { type: blob.type }), "backgrounds");
         } catch { bgUrl = background; }
       }
 
       const saved = await saveRoom({ id: currentRoom.id, name: currentRoom.name, background: bgUrl, items: uploadedItems });
-      setCurrentRoom((prev) => ({ ...prev, id: saved.id }));
+      setCurrentRoom((p) => ({ ...p, id: saved.id }));
       setSaveMsg("✓ Saved");
       setTimeout(() => setSaveMsg(""), 2500);
     } catch {
       setSaveMsg("Save failed");
       setTimeout(() => setSaveMsg(""), 3000);
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
+  };
+
+  const handleRename = () => {
+    const name = prompt("Room name:", currentRoom.name);
+    if (name?.trim()) setCurrentRoom((p) => ({ ...p, name: name.trim() }));
   };
 
   const handleLoadRoom = (room) => {
@@ -93,100 +141,120 @@ export default function App() {
 
   const handleNewRoom = () => {
     setCurrentRoom({ id: null, name: "Untitled Room" });
-    setBackground(null);
-    setItems([]);
+    setBackground(null); setItems([]);
     setShowRooms(false);
   };
 
-  const handleRename = () => {
-    const name = prompt("Room name:", currentRoom.name);
-    if (name?.trim()) setCurrentRoom((prev) => ({ ...prev, name: name.trim() }));
-  };
-
   if (authLoading) return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #fdf6f0 0%, #f5e6d8 50%, #ede0d4 100%)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Inter','Segoe UI',sans-serif",
-    }}>
+    <div className="app__loading">
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "48px", marginBottom: "12px" }}>🛋️</div>
-        <div style={{ color: "#a07850", fontSize: "14px" }}>Loading...</div>
+        <span className="app__loading-icon">🛋️</span>
+        <p className="app__loading-text">Loading…</p>
       </div>
     </div>
   );
 
-  if (!user) return <Auth onAuth={() => getUser().then(setUser)} />;
+  if (!user) {
+    if (view === "landing") {
+      return (
+        <Landing
+          onGetStarted={() => { setAuthTab("signup"); setView("auth"); }}
+          onLogin={() => { setAuthTab("login"); setView("auth"); }}
+        />
+      );
+    }
+    return (
+      <Auth
+        initialTab={authTab}
+        onAuth={() => getUser().then(setUser)}
+        onBack={() => setView("landing")}
+      />
+    );
+  }
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
-      {/* Top bar */}
-      <div style={{
-        background: colors.toolbar, padding: "9px 16px",
-        display: "flex", alignItems: "center", gap: "10px",
-        borderBottom: `1px solid ${colors.toolbarBorder}`,
-        flexShrink: 0, flexWrap: "wrap",
-      }}>
-        {/* Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: "7px", marginRight: "4px" }}>
-          <span style={{ fontSize: "18px" }}>🛋️</span>
-          <span style={{ color: colors.text, fontWeight: "700", fontSize: "14px", letterSpacing: "-0.2px" }}>Room Planner</span>
-        </div>
-
-        {/* Divider */}
-        <div style={{ width: "1px", height: "18px", background: "#4a3020" }} />
-
-        {/* Room name */}
-        <button onClick={handleRename} style={{
-          background: "rgba(255,255,255,0.07)", border: "1px solid #4a3020",
-          color: colors.textMuted, padding: "4px 10px", borderRadius: "7px",
-          cursor: "pointer", fontSize: "12px", fontWeight: "500",
-          display: "flex", alignItems: "center", gap: "5px",
-        }}>
-          <span>✏️</span>
-          <span>{currentRoom.name}</span>
-        </button>
-
-        {/* My Rooms */}
-        <button onClick={() => setShowRooms(true)} style={toolbarBtn("ghost")}>
-          📂 My Rooms
-        </button>
-
-        {/* Save */}
-        <button onClick={handleSave} disabled={saving} style={{ ...toolbarBtn("primary"), opacity: saving ? 0.7 : 1 }}>
-          {saving ? "Saving..." : "💾 Save"}
-        </button>
-
-        {/* Save message */}
-        {saveMsg && (
-          <span style={{
-            fontSize: "12px", fontWeight: "600",
-            color: saveMsg.startsWith("✓") ? "#7ecba0" : "#e87e6b",
-          }}>{saveMsg}</span>
-        )}
-
-        {/* Right side */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ color: colors.textDim, fontSize: "11px" }}>{user.email}</span>
-          <button onClick={signOut} style={toolbarBtn("muted")}>Sign out</button>
-        </div>
-      </div>
-
-      {/* Canvas */}
-      <Moodboard
-        initialBackground={background}
-        initialItems={items}
-        onBackgroundChange={setBackground}
-        onItemsChange={setItems}
+    <ShoppingListProvider user={user}>
+      <AuthenticatedApp
+        user={user}
+        currentRoom={currentRoom}
+        saving={saving}
+        saveMsg={saveMsg}
+        background={background}
+        items={items}
+        sessionWarn={sessionWarn}
+        resetTimers={resetTimers}
+        showRooms={showRooms}
+        showShoppingList={showShoppingList}
+        setShowShoppingList={setShowShoppingList}
+        setShowRooms={setShowRooms}
+        setBackground={setBackground}
+        setItems={setItems}
+        onSave={handleSave}
+        onRename={handleRename}
+        onAddItem={handleAddItem}
+        onLoadRoom={handleLoadRoom}
+        onNewRoom={handleNewRoom}
       />
+    </ShoppingListProvider>
+  );
+}
+
+// ── Inner shell — rendered inside the ShoppingListProvider so it can read the
+//    cart count/badge and pass a bound "add to list" handler down to Canvas ──
+function AuthenticatedApp({
+  user, currentRoom, saving, saveMsg, background, items, sessionWarn, resetTimers,
+  showRooms, showShoppingList, setShowShoppingList, setShowRooms,
+  setBackground, setItems, onSave, onRename, onAddItem, onLoadRoom, onNewRoom,
+}) {
+  const { count, addToList } = useShoppingList();
+
+  return (
+    <div className="app">
+      <Toolbar
+        user={user}
+        roomName={currentRoom.name}
+        saving={saving}
+        saveMsg={saveMsg}
+        onSave={onSave}
+        onRename={onRename}
+        onOpenRooms={() => setShowRooms(true)}
+        onOpenShoppingList={() => setShowShoppingList(true)}
+        shoppingCount={count}
+      />
+
+      {sessionWarn && (
+        <div className="app__session-warn">
+          <span>⏳ You'll be logged out in 2 minutes due to inactivity.</span>
+          <button onClick={resetTimers}>Stay logged in</button>
+        </div>
+      )}
+
+      <div className="app__body">
+        <Sidebar
+          background={background}
+          onAddItem={onAddItem}
+          onSetBackground={setBackground}
+          onClearBackground={() => setBackground(null)}
+        />
+        <Canvas
+          background={background}
+          items={items}
+          onItemsChange={setItems}
+          onBackgroundChange={setBackground}
+          onAddToList={(canvasItem) => addToList(canvasItem, currentRoom.id)}
+        />
+      </div>
 
       {showRooms && (
         <RoomManager
           onClose={() => setShowRooms(false)}
-          onLoad={handleLoadRoom}
-          onNew={handleNewRoom}
+          onLoad={onLoadRoom}
+          onNew={onNewRoom}
         />
+      )}
+
+      {showShoppingList && (
+        <ShoppingListPanel onClose={() => setShowShoppingList(false)} />
       )}
     </div>
   );

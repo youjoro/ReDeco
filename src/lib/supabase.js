@@ -113,7 +113,93 @@ export async function deleteRoom(id) {
   if (error) throw error;
 }
 
-// ─── Image Storage ────────────────────────────────────────────────────────────
+// ─── Furniture Catalog (mock data, v1) ────────────────────────────────────────
+
+export async function loadFurnitureCatalog() {
+  const { data, error } = await supabase
+    .from("furniture_items")
+    .select("*")
+    .order("name");
+
+  if (error) throw error;
+  return data;
+}
+
+// ─── Shopping List ─────────────────────────────────────────────────────────────
+
+// One list per user for v1 — creates it on first use, otherwise returns the existing one
+export async function getOrCreateShoppingList() {
+  const user = await getUser();
+  if (!user) throw new Error("Not logged in");
+
+  const { data: existing, error: findErr } = await supabase
+    .from("shopping_lists")
+    .select("*")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (findErr) throw findErr;
+  if (existing) return existing;
+
+  const { data: created, error: createErr } = await supabase
+    .from("shopping_lists")
+    .insert({ user_id: user.id, name: "My Shopping List" })
+    .select()
+    .single();
+
+  if (createErr) throw createErr;
+  return created;
+}
+
+// Items joined with their catalog row so price/retailer/image come back in one call
+export async function loadShoppingListItems(shoppingListId) {
+  const { data, error } = await supabase
+    .from("shopping_list_items")
+    .select("*, furniture_items(*)")
+    .eq("shopping_list_id", shoppingListId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function addShoppingListItem({ shoppingListId, furnitureItemId, quantity = 1, addedFromMoodboardId = null }) {
+  const { data, error } = await supabase
+    .from("shopping_list_items")
+    .insert({
+      shopping_list_id: shoppingListId,
+      furniture_item_id: furnitureItemId,
+      quantity,
+      added_from_moodboard_id: addedFromMoodboardId,
+    })
+    .select("*, furniture_items(*)")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateShoppingListItemQuantity(itemId, quantity) {
+  const { data, error } = await supabase
+    .from("shopping_list_items")
+    .update({ quantity })
+    .eq("id", itemId)
+    .select("*, furniture_items(*)")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function removeShoppingListItem(itemId) {
+  const { error } = await supabase
+    .from("shopping_list_items")
+    .delete()
+    .eq("id", itemId);
+
+  if (error) throw error;
+}
 
 export async function uploadImage(file, folder = "furniture") {
   const user = await getUser();

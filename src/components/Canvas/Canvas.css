@@ -1,0 +1,101 @@
+.canvas-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-minibar {
+  height: 38px;
+  flex-shrink: 0;
+  background: var(--toolbar);
+  border-bottom: 1px solid var(--toolbar-bdr);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 12px;
+}
+
+.canvas-minibar__count {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.canvas-minibar__remove {
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(192,57,43,0.2);
+  color: #f87171;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.canvas-minibar__right { margin-left: auto; }
+
+.canvas-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--canvas);
+  background-image: radial-gradient(circle, #c1c1c4 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.canvas-area--has-bg {
+  background-image: none;
+}
+
+.canvas-area__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.canvas-empty__icon {
+  font-size: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px; height: 88px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #ffffff 0%, #e4e4e7 100%);
+  box-shadow: inset 0 0 0 1px var(--border), 0 8px 24px rgba(24,24,27,0.06);
+}
+.canvas-empty__text { font-size: 14px; color: var(--text-sub); font-weight: 500; text-align: center; padding: 0 20px; }
+
+/* ── Mobile canvas ── */
+@media (max-width: 640px) {
+  .canvas-minibar { height: 36px; padding: 0 10px; gap: 8px; }
+  .canvas-minibar__count { font-size: 10px; }
+
+  /* Reserve space at bottom for the tab bar + panel */
+  .canvas-wrap {
+    padding-bottom: 0;
+  }
+
+  .canvas-area {
+    /* Push canvas up so bottom tab bar doesn't overlap furniture */
+    margin-bottom: 0;
+  }
+
+  .canvas-empty__text { font-size: 13px; }
+}

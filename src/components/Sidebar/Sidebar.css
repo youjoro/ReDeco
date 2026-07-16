@@ -1,0 +1,98 @@
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--sidebar-bdr);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Tab bar ── */
+.sidebar__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--sidebar-bdr);
+  flex-shrink: 0;
+}
+
+.sidebar__tab {
+  flex: 1;
+  padding: 10px 0 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-sub);
+  font-weight: 500;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.sidebar__tab .tab-icon { font-size: 16px; }
+
+.sidebar__tab.active {
+  background: var(--accent-light);
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Panel body ── */
+.sidebar__panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+}
+
+/* ── Mobile: sidebar becomes bottom sheet ── */
+@media (max-width: 640px) {
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-top: 1px solid var(--sidebar-bdr);
+    z-index: 100;
+    flex-direction: column-reverse;
+    /* safe area for home indicator */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Tab bar sits at the very bottom */
+  .sidebar__tabs {
+    border-bottom: none;
+    border-top: 1px solid var(--sidebar-bdr);
+    order: 2;
+  }
+
+  .sidebar__tab {
+    padding: 8px 0 6px;
+    font-size: 10px;
+  }
+  .sidebar__tab .tab-icon { font-size: 20px; }
+
+  /* Panel slides up when a tab is active */
+  .sidebar__panel {
+    order: 1;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0;
+    transition: max-height 0.28s ease, padding 0.2s ease;
+  }
+
+  .sidebar__panel.open {
+    max-height: 55vh;
+    padding: 12px;
+    overflow-y: auto;
+  }
+}

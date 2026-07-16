@@ -6,16 +6,20 @@
     <title>Room Planner</title>
     <!--
       Content Security Policy
-      – script-src: only same-origin scripts + blob workers (needed for background-removal WASM workers)
+      – script-src: 'self' + blob: workers only. No unsafe-inline/eval.
+        Vite dev HMR injects an inline module bootstrap — if the error
+        overlay stops working in dev that's acceptable; it is not present
+        in production builds.
       – style-src: unsafe-inline required for React inline styles
-      – img-src: allow blob/data (canvas/uploads), Pixabay CDN, Supabase storage, placeholder
-      – connect-src: Supabase REST + realtime, Pixabay API, jsdelivr (background-removal model CDN)
+      – img-src: blob/data (canvas/uploads), Pixabay CDN, Supabase storage
+      – connect-src: Supabase REST + realtime, Pixabay API,
+                     jsdelivr (background-removal model weights)
       – worker-src: blob workers for WASM (background-removal)
-      – object-src / base-uri: locked down to prevent plugin and base-tag attacks
+      – object-src / base-uri: locked down to prevent plugin/base-tag attacks
     -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:;
+      script-src 'self' blob:;
       style-src 'self' 'unsafe-inline';
       img-src 'self' blob: data: https://*.pixabay.com https://pixabay.com https://*.supabase.co https://placehold.co;
       connect-src 'self' https://*.supabase.co wss://*.supabase.co https://pixabay.com https://cdn.jsdelivr.net;

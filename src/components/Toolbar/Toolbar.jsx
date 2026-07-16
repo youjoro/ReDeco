@@ -1,4 +1,5 @@
 import { signOut } from "../../lib/supabase";
+import FeedbackButton from "../Feedback/FeedbackButton";
 import "./Toolbar.css";
 
 export default function Toolbar({ user, roomName, saving, saveMsg, onSave, onRename, onOpenRooms, onOpenShoppingList, shoppingCount = 0 }) {
@@ -35,6 +36,7 @@ export default function Toolbar({ user, roomName, saving, saveMsg, onSave, onRen
       )}
 
       <div className="toolbar__right">
+        <FeedbackButton user={user} />
         <span className="toolbar__email">{user?.email}</span>
         <button className="toolbar__btn toolbar__btn--ghost" onClick={signOut}>
           Sign out

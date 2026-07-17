@@ -1,9 +1,9 @@
 .feedback-trigger {
   padding: 4px 12px;
   border-radius: 7px;
-  border: 1px solid rgba(99,102,241,0.4);
-  background: rgba(99,102,241,0.12);
-  color: #a5b4fc;
+  border: 1px solid rgba(61,153,112,0.45);
+  background: rgba(61,153,112,0.12);
+  color: #5ec99a;
   font-weight: 600;
   font-size: 12px;
   font-family: inherit;
@@ -12,8 +12,8 @@
   transition: background 0.15s, border-color 0.15s;
 }
 .feedback-trigger:hover {
-  background: rgba(99,102,241,0.22);
-  border-color: rgba(99,102,241,0.7);
+  background: rgba(61,153,112,0.22);
+  border-color: rgba(61,153,112,0.70);
 }
 
 /* ── Overlay ── */
@@ -114,7 +114,7 @@ form { padding: 16px 20px 20px; }
   padding: 6px 18px;
   border-radius: 8px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #3d9970, #2d7d5a);
   color: #fff;
   font-weight: 600;
   font-size: 12px;

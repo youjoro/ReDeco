@@ -1,6 +1,6 @@
 .room-manager__overlay {
   position: fixed; inset: 0;
-  background: rgba(61,43,31,0.45);
+  background: rgba(30,22,18,0.50);
   display: flex; align-items: center; justify-content: center;
   z-index: 200; backdrop-filter: blur(3px);
 }
@@ -10,7 +10,7 @@
   border-radius: 20px; padding: 28px;
   width: 480px; max-height: 80vh;
   display: flex; flex-direction: column;
-  box-shadow: 0 16px 60px rgba(61,43,31,0.2);
+  box-shadow: 0 16px 60px rgba(30,22,18,0.18);
   border: 1px solid var(--border);
 }
 
@@ -26,7 +26,7 @@
   background: var(--gradient-accent);
   color: white; border: none; border-radius: 12px;
   cursor: pointer; font-weight: 700; font-size: 14px;
-  box-shadow: 0 3px 10px rgba(160,90,44,0.3);
+  box-shadow: 0 3px 10px rgba(184,92,56,0.28);
   font-family: inherit; transition: opacity 0.15s;
 }
 .room-manager__new:hover { opacity: 0.9; }
@@ -51,7 +51,7 @@
   background: var(--bg); border: 1.5px solid var(--border);
   transition: border-color 0.12s, box-shadow 0.12s;
 }
-.room-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(232,130,60,0.18); }
+.room-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(184,92,56,0.18); }
 
 .room-card__thumb {
   width: 54px; height: 42px; border-radius: 8px; overflow: hidden;

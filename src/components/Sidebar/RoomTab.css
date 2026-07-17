@@ -37,7 +37,7 @@
   padding: 9px 0; border-radius: 9px; border: none; cursor: pointer;
   background: var(--gradient-accent);
   color: white; font-weight: 700; font-size: 13px;
-  box-shadow: 0 2px 8px rgba(160,90,44,0.25);
+  box-shadow: 0 2px 8px rgba(184,92,56,0.25);
   font-family: inherit; transition: opacity 0.15s;
 }
 .room-tab__btn:hover { opacity: 0.9; }

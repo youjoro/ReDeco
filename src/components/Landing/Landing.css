@@ -253,6 +253,13 @@
   color: var(--text-sub);
 }
 
+.landing__check {
+  font-style: normal;
+  font-weight: 800;
+  color: var(--accent-2);
+  margin-right: 3px;
+}
+
 .landing__proof-sep {
   display: inline-block;
   width: 1px;
@@ -343,8 +350,8 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--accent-light);
-  color: var(--accent);
+  background: var(--accent-2-light);
+  color: var(--accent-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -385,7 +392,7 @@
 .landing__final {
   text-align: center;
   padding: 72px 32px 80px;
-  background: var(--accent-light);
+  background: var(--accent-2-light);
   border-top: 1px solid var(--border);
 }
 

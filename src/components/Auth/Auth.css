@@ -27,7 +27,7 @@
   left: -10%;
   width: 380px;
   height: 380px;
-  background: radial-gradient(circle, var(--auth-glow-2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(45,125,90,0.10) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -88,8 +88,9 @@
 }
 .auth-tab.active {
   background: var(--card-bg);
-  color: var(--text);
+  color: var(--accent-2);
   box-shadow: 0 1px 6px rgba(24,24,27,0.12);
+  border-bottom: 2px solid var(--accent-2);
 }
 
 .auth-fields { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
@@ -113,7 +114,7 @@
   margin-bottom: 14px; display: flex; align-items: flex-start; gap: 8px;
 }
 .auth-alert.error   { background: var(--danger-bg); border: 1px solid #fac8c8; color: var(--danger); }
-.auth-alert.success { background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.25); color: var(--success); }
+.auth-alert.success { background: var(--accent-2-light); border: 1px solid rgba(45,125,90,0.30); color: var(--accent-2); }
 
 .auth-btn {
   width: 100%; padding: 12px 0;

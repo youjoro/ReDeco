@@ -121,13 +121,13 @@ export default function Landing({ onGetStarted, onLogin }) {
 
       {/* ── Social proof strip ── */}
       <div className="landing__proof">
-        <span>✓ Backgrounds removed automatically</span>
+        <span><em className="landing__check">✓</em> Backgrounds removed automatically</span>
         <span className="landing__proof-sep" />
-        <span>✓ Snap-to-grid alignment</span>
+        <span><em className="landing__check">✓</em> Snap-to-grid alignment</span>
         <span className="landing__proof-sep" />
-        <span>✓ 3 rooms free to start</span>
+        <span><em className="landing__check">✓</em> 3 rooms free to start</span>
         <span className="landing__proof-sep" />
-        <span>✓ Works on any device</span>
+        <span><em className="landing__check">✓</em> Works on any device</span>
       </div>
 
       {/* ── Features ── */}

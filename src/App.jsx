@@ -85,10 +85,11 @@ export default function App() {
   }, []);
 
   const FREE_ITEM_LIMIT = 50;
+  const isPro = !!user?.app_metadata?.is_pro;
 
   // ── Add item from sidebar ──
   const handleAddItem = (src, size, label) => {
-    if (items.length >= FREE_ITEM_LIMIT) {
+    if (!isPro && items.length >= FREE_ITEM_LIMIT) {
       setItemPaywall(true);
       return;
     }
@@ -184,6 +185,7 @@ export default function App() {
     <ShoppingListProvider user={user}>
       <AuthenticatedApp
         user={user}
+        isPro={isPro}
         currentRoom={currentRoom}
         saving={saving}
         saveMsg={saveMsg}
@@ -212,7 +214,7 @@ export default function App() {
 // ── Inner shell — rendered inside the ShoppingListProvider so it can read the
 //    cart count/badge and pass a bound "add to list" handler down to Canvas ──
 function AuthenticatedApp({
-  user, currentRoom, saving, saveMsg, background, items, sessionWarn, resetTimers,
+  user, isPro, currentRoom, saving, saveMsg, background, items, sessionWarn, resetTimers,
   showRooms, showShoppingList, setShowShoppingList, setShowRooms,
   setBackground, setItems, onSave, onRename, onAddItem, onLoadRoom, onNewRoom,
   itemPaywall, setItemPaywall,
@@ -223,6 +225,7 @@ function AuthenticatedApp({
     <div className="app">
       <Toolbar
         user={user}
+        isPro={isPro}
         roomName={currentRoom.name}
         saving={saving}
         saveMsg={saveMsg}
@@ -258,6 +261,7 @@ function AuthenticatedApp({
 
       {showRooms && (
         <RoomManager
+          isPro={isPro}
           onClose={() => setShowRooms(false)}
           onLoad={onLoadRoom}
           onNew={onNewRoom}

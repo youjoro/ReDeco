@@ -7,7 +7,7 @@ const FREE_ROOM_LIMIT = 3;
 
 const fmt = (str) => new Date(str).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-export default function RoomManager({ onLoad, onNew, onClose }) {
+export default function RoomManager({ isPro, onLoad, onNew, onClose }) {
   const [rooms,       setRooms]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState("");
@@ -31,7 +31,7 @@ export default function RoomManager({ onLoad, onNew, onClose }) {
   };
 
   const handleNew = () => {
-    if (rooms.length >= FREE_ROOM_LIMIT) {
+    if (!isPro && rooms.length >= FREE_ROOM_LIMIT) {
       setShowPaywall(true);
     } else {
       onNew();
@@ -47,7 +47,7 @@ export default function RoomManager({ onLoad, onNew, onClose }) {
             <div>
               <div className="room-manager__title">My Rooms</div>
               <div className="room-manager__subtitle">
-                {rooms.length} / {FREE_ROOM_LIMIT} rooms used
+                {isPro ? `${rooms.length} rooms · unlimited` : `${rooms.length} / ${FREE_ROOM_LIMIT} rooms used`}
               </div>
             </div>
             <button className="room-manager__close" onClick={onClose}>×</button>

@@ -3,7 +3,7 @@ import FeedbackButton from "../Feedback/FeedbackButton";
 import { useTheme } from "../../context/ThemeContext";
 import "./Toolbar.css";
 
-export default function Toolbar({ user, roomName, saving, saveMsg, onSave, onRename, onOpenRooms, onOpenShoppingList, shoppingCount = 0 }) {
+export default function Toolbar({ user, isPro, roomName, saving, saveMsg, onSave, onRename, onOpenRooms, onOpenShoppingList, shoppingCount = 0 }) {
   const { theme, toggle } = useTheme();
   return (
     <div className="toolbar">
@@ -38,6 +38,9 @@ export default function Toolbar({ user, roomName, saving, saveMsg, onSave, onRen
       )}
 
       <div className="toolbar__right">
+        <span className={`toolbar__plan-badge ${isPro ? "toolbar__plan-badge--pro" : "toolbar__plan-badge--free"}`}>
+          {isPro ? "✦ Pro" : "Free"}
+        </span>
         <button
           className="toolbar__theme-toggle"
           onClick={toggle}

@@ -125,7 +125,7 @@ export default function Landing({ onGetStarted, onLogin }) {
         <span className="landing__proof-sep" />
         <span>✓ Snap-to-grid alignment</span>
         <span className="landing__proof-sep" />
-        <span>✓ 1 room free to start</span>
+        <span>✓ 10 rooms free to start</span>
         <span className="landing__proof-sep" />
         <span>✓ Works on any device</span>
       </div>

@@ -1,6 +1,6 @@
 import "./PaywallModal.css";
 
-const FREE_LIMIT = 1;
+const FREE_LIMIT = 10;
 
 export default function PaywallModal({ roomCount, onClose }) {
   return (
@@ -11,7 +11,7 @@ export default function PaywallModal({ roomCount, onClose }) {
         <div className="paywall__icon">🔒</div>
         <h2 className="paywall__title">You've used your free room</h2>
         <p className="paywall__sub">
-          Free accounts include <strong>{FREE_LIMIT} saved room</strong>. You have {roomCount} — upgrade to keep designing without limits.
+          Free accounts include <strong>{FREE_LIMIT} saved rooms</strong>. You have {roomCount} — upgrade to keep designing without limits.
         </p>
 
         <div className="paywall__plans">
@@ -20,7 +20,7 @@ export default function PaywallModal({ roomCount, onClose }) {
             <div className="paywall__plan-name">Free</div>
             <div className="paywall__plan-price">$0<span>/mo</span></div>
             <ul className="paywall__plan-features">
-              <li>✓ 1 saved room</li>
+              <li>✓ 10 saved rooms</li>
               <li>✓ Furniture search</li>
               <li>✓ Shopping list</li>
               <li className="paywall__feature--muted">✗ Multiple rooms</li>

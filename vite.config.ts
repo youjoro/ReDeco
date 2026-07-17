@@ -7,6 +7,14 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
   },
+  build: {
+    rolldownOptions: {
+      // @imgly/background-removal dynamically imports onnxruntime-web/webgpu at
+      // runtime in the browser — Rolldown cannot resolve it at build time, so we
+      // tell it to leave these imports alone and let the browser handle them.
+      external: ['onnxruntime-web', 'onnxruntime-web/webgpu'],
+    },
+  },
   server: {
     host: true,
     port: 5000,

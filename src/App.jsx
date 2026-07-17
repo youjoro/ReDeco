@@ -6,6 +6,7 @@ import Sidebar             from "./components/Sidebar/Sidebar";
 import Canvas               from "./components/Canvas/Canvas";
 import RoomManager          from "./components/RoomManager/RoomManager";
 import ShoppingListPanel    from "./components/ShoppingList/ShoppingListPanel";
+import PaywallModal         from "./components/Paywall/PaywallModal";
 import { ShoppingListProvider, useShoppingList } from "./context/ShoppingListContext";
 import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./lib/supabase";
 import { snap } from "./lib/snapGrid";
@@ -23,6 +24,7 @@ export default function App() {
   const [user,        setUser]        = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showRooms,   setShowRooms]   = useState(false);
+  const [itemPaywall, setItemPaywall] = useState(false);
   const [currentRoom, setCurrentRoom] = useState({ id: null, name: "Untitled Room" });
   const [saving,      setSaving]      = useState(false);
   const [saveMsg,     setSaveMsg]     = useState("");
@@ -82,8 +84,14 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const FREE_ITEM_LIMIT = 50;
+
   // ── Add item from sidebar ──
   const handleAddItem = (src, size, label) => {
+    if (items.length >= FREE_ITEM_LIMIT) {
+      setItemPaywall(true);
+      return;
+    }
     setItems((prev) => [...prev, {
       id: nextId++, src, label,
       x: snap(80 + Math.random() * 200, 0),
@@ -194,6 +202,8 @@ export default function App() {
         onAddItem={handleAddItem}
         onLoadRoom={handleLoadRoom}
         onNewRoom={handleNewRoom}
+        itemPaywall={itemPaywall}
+        setItemPaywall={setItemPaywall}
       />
     </ShoppingListProvider>
   );
@@ -205,6 +215,7 @@ function AuthenticatedApp({
   user, currentRoom, saving, saveMsg, background, items, sessionWarn, resetTimers,
   showRooms, showShoppingList, setShowShoppingList, setShowRooms,
   setBackground, setItems, onSave, onRename, onAddItem, onLoadRoom, onNewRoom,
+  itemPaywall, setItemPaywall,
 }) {
   const { count, addToList } = useShoppingList();
 
@@ -255,6 +266,14 @@ function AuthenticatedApp({
 
       {showShoppingList && (
         <ShoppingListPanel onClose={() => setShowShoppingList(false)} />
+      )}
+
+      {itemPaywall && (
+        <PaywallModal
+          type="items"
+          count={items.length}
+          onClose={() => setItemPaywall(false)}
+        />
       )}
     </div>
   );

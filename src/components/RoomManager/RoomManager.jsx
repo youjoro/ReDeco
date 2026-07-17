@@ -3,7 +3,7 @@ import { loadRooms, deleteRoom } from "../../lib/supabase";
 import PaywallModal from "../Paywall/PaywallModal";
 import "./RoomManager.css";
 
-const FREE_ROOM_LIMIT = 10;
+const FREE_ROOM_LIMIT = 3;
 
 const fmt = (str) => new Date(str).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
@@ -47,7 +47,7 @@ export default function RoomManager({ onLoad, onNew, onClose }) {
             <div>
               <div className="room-manager__title">My Rooms</div>
               <div className="room-manager__subtitle">
-                {rooms.length} / {FREE_ROOM_LIMIT} free rooms used
+                {rooms.length} / {FREE_ROOM_LIMIT} rooms used
               </div>
             </div>
             <button className="room-manager__close" onClick={onClose}>×</button>
@@ -91,7 +91,8 @@ export default function RoomManager({ onLoad, onNew, onClose }) {
 
       {showPaywall && (
         <PaywallModal
-          roomCount={rooms.length}
+          type="rooms"
+          count={rooms.length}
           onClose={() => setShowPaywall(false)}
         />
       )}

@@ -1,18 +1,36 @@
 import "./PaywallModal.css";
 
-const FREE_LIMIT = 10;
+const FREE_ROOM_LIMIT  = 3;
+const FREE_ITEM_LIMIT  = 50;
 
-export default function PaywallModal({ roomCount, onClose }) {
+const CONFIGS = {
+  rooms: {
+    icon:  "🔒",
+    title: "You've used all your free rooms",
+    sub:   (count) =>
+      `Free accounts include ${FREE_ROOM_LIMIT} saved rooms. You have ${count} — upgrade to keep designing without limits.`,
+    freeFeature: `${FREE_ROOM_LIMIT} saved rooms`,
+  },
+  items: {
+    icon:  "📦",
+    title: "You've reached the item limit",
+    sub:   (count) =>
+      `Free accounts can place up to ${FREE_ITEM_LIMIT} items per room. This room has ${count} — upgrade to add as many as you like.`,
+    freeFeature: `Up to ${FREE_ITEM_LIMIT} items / room`,
+  },
+};
+
+export default function PaywallModal({ type = "rooms", count, onClose }) {
+  const cfg = CONFIGS[type];
+
   return (
     <div className="paywall__overlay" onClick={onClose}>
       <div className="paywall__modal" onClick={(e) => e.stopPropagation()}>
         <button className="paywall__close" onClick={onClose} aria-label="Close">×</button>
 
-        <div className="paywall__icon">🔒</div>
-        <h2 className="paywall__title">You've used your free room</h2>
-        <p className="paywall__sub">
-          Free accounts include <strong>{FREE_LIMIT} saved rooms</strong>. You have {roomCount} — upgrade to keep designing without limits.
-        </p>
+        <div className="paywall__icon">{cfg.icon}</div>
+        <h2 className="paywall__title">{cfg.title}</h2>
+        <p className="paywall__sub">{cfg.sub(count)}</p>
 
         <div className="paywall__plans">
           {/* Free plan */}
@@ -20,11 +38,11 @@ export default function PaywallModal({ roomCount, onClose }) {
             <div className="paywall__plan-name">Free</div>
             <div className="paywall__plan-price">$0<span>/mo</span></div>
             <ul className="paywall__plan-features">
-              <li>✓ 10 saved rooms</li>
+              <li>✓ {cfg.freeFeature}</li>
               <li>✓ Furniture search</li>
               <li>✓ Shopping list</li>
-              <li className="paywall__feature--muted">✗ Multiple rooms</li>
-              <li className="paywall__feature--muted">✗ Priority support</li>
+              <li className="paywall__feature--muted">✗ Unlimited rooms</li>
+              <li className="paywall__feature--muted">✗ Unlimited items</li>
             </ul>
             <div className="paywall__plan-current">Current plan</div>
           </div>
@@ -36,9 +54,9 @@ export default function PaywallModal({ roomCount, onClose }) {
             <div className="paywall__plan-price">$5<span>/mo</span></div>
             <ul className="paywall__plan-features">
               <li>✓ Unlimited rooms</li>
+              <li>✓ Unlimited items</li>
               <li>✓ Furniture search</li>
               <li>✓ Shopping list</li>
-              <li>✓ Multiple rooms</li>
               <li>✓ Priority support</li>
             </ul>
             <button className="paywall__upgrade-btn" onClick={onClose}>

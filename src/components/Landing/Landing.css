@@ -178,6 +178,8 @@
     0 12px 40px rgba(0,0,0,0.10);
   aspect-ratio: 4 / 3;
   background: #ede9e3;
+  width: 100%;
+  height: 100%;
 }
 
 .landing__mock-chrome {

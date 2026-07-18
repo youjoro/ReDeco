@@ -117,13 +117,17 @@ export default function App() {
       setItemPaywall(true);
       return;
     }
-    setItems((prev) => [...prev, {
-      id: nextId++, src, label,
-      x: snap(80 + Math.random() * 200, 0),
-      y: snap(60 + Math.random() * 120, 0),
-      width: size.width, height: size.height,
-      rotation: 0,
-    }]);
+    setItems((prev) => {
+      const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;
+      return [...prev, {
+        id: nextId++, src, label,
+        x: snap(80 + Math.random() * 200, 0),
+        y: snap(60 + Math.random() * 120, 0),
+        width: size.width, height: size.height,
+        rotation: 0,
+        zOrder: maxZ + 1,
+      }];
+    });
   };
 
   // ── Save to Supabase (requires auth) ──

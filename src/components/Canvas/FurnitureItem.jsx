@@ -130,7 +130,9 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
         left: item.x, top: item.y,
         width: item.width, height: item.height,
         transform: `rotate(${rotation}deg)`,
-        zIndex: isSelected ? 50 : hovered ? 40 : 10,
+        // Selected item floats above everything for handle visibility;
+        // otherwise the stored zOrder drives stacking (1-based, 0 = back).
+        zIndex: isSelected ? 1000 : (item.zOrder ?? 0) + 1,
       }}
       onMouseDown={startMouseDrag}
       onTouchStart={startTouchDrag}

@@ -35,6 +35,49 @@
 
 .canvas-minibar__right { margin-left: auto; }
 
+/* ── Layer controls ── */
+.canvas-minibar__layers {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--toolbar-bdr);
+  border-radius: 6px;
+  padding: 2px 3px;
+}
+
+.canvas-minibar__layer-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
+  padding: 0;
+  line-height: 1;
+}
+.canvas-minibar__layer-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  color: var(--text);
+}
+.canvas-minibar__layer-btn:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+.canvas-minibar__layer-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
 .canvas-area {
   flex: 1;
   position: relative;

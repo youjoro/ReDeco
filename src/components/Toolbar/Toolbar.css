@@ -20,11 +20,9 @@
 .toolbar__brand-logo {
   width: 24px;
   height: 24px;
-  object-fit: contain;
+  object-fit: cover;
   flex-shrink: 0;
-  background: #10b981;
   border-radius: 6px;
-  padding: 3px;
 }
 .toolbar__brand-name { color: #f5f0ea; font-weight: 700; font-size: 13px; white-space: nowrap; }
 

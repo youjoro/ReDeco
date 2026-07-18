@@ -7,10 +7,11 @@ export default function UploadTab({ onAddItem }) {
   const fileRef = useRef(null);
   const [adding, setAdding] = useState(false);
   const [error,  setError]  = useState("");
+  const [dragOver, setDragOver] = useState(false);
 
   const handleFiles = async (e) => {
     setError("");
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files || e.dataTransfer?.files || []);
     if (!files.length) return;
 
     setAdding(true);
@@ -38,14 +39,40 @@ export default function UploadTab({ onAddItem }) {
       }
     }
     setAdding(false);
-    e.target.value = "";
+    setDragOver(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    handleFiles(e);
   };
 
   return (
     <div className="upload-tab">
       <p className="upload-tab__label">Upload Furniture Image</p>
 
-      <div className="upload-tab__drop" onClick={() => fileRef.current.click()}>
+      <div
+        className={`upload-tab__drop${dragOver ? " upload-tab__drop--over" : ""}`}
+        onClick={() => fileRef.current.click()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <div className="upload-tab__drop-icon">🪴</div>
         <div className="upload-tab__drop-title">Click to browse files</div>
         <div className="upload-tab__drop-sub">Background removed automatically · PNG works best · Max 10 MB</div>

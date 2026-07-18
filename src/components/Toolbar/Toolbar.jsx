@@ -26,7 +26,7 @@ export default function Toolbar({
   return (
     <div className="toolbar">
       <div className="toolbar__brand">
-        <span className="toolbar__brand-icon">🪴</span>
+        <img src="/logo.png" alt="ReDeco" className="toolbar__brand-logo" />
         <span className="toolbar__brand-name">ReDeco</span>
       </div>
 

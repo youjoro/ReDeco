@@ -17,14 +17,14 @@
   gap: 6px;
   margin-right: 4px;
 }
-.toolbar__brand-icon {
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px; height: 24px;
-  border-radius: 7px;
+.toolbar__brand-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
   background: var(--gradient-accent);
+  padding: 3px;
+  flex-shrink: 0;
 }
 .toolbar__brand-name { color: #f5f0ea; font-weight: 700; font-size: 13px; white-space: nowrap; }
 

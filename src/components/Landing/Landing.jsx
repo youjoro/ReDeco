@@ -58,7 +58,7 @@ export default function Landing({ onGetStarted, onLogin }) {
       {/* ── Nav ── */}
       <nav className="landing__nav">
         <div className="landing__nav-brand">
-          <span className="landing__nav-icon">🪴</span>
+          <img src="/logo.png" alt="ReDeco" className="landing__nav-logo" />
           ReDeco
         </div>
         <div className="landing__nav-actions">

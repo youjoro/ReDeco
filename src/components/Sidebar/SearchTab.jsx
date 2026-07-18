@@ -101,8 +101,13 @@ export default function SearchTab({ onAddItem }) {
                 onClick={() => !adding && handleAdd(img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
               >
                 <img
-                  src={img.previewURL?.replace(/^http:\/\//, "https://")} alt={img.tags} loading="lazy"
-                  onError={(e) => { e.target.src = "https://placehold.co/120x120/fdf0e6/c4a882?text=?"; }}
+                  src={img.previewURL?.replace(/^http:\/\//, "https://")} alt={img.tags}
+                  onError={(e) => {
+                    if (!e.target.dataset.errored) {
+                      e.target.dataset.errored = "1";
+                      e.target.src = "https://placehold.co/120x120/fdf0e6/c4a882?text=?";
+                    }
+                  }}
                 />
                 {adding === img.webformatURL && <div className="search-tab__result-overlay">✂️</div>}
               </div>

@@ -190,9 +190,8 @@ export default function App() {
   if (view === "landing") {
     return (
       <Landing
-        onGetStarted={() => { setAuthTab("signup"); setView("auth"); }}
+        onGetStarted={() => setView("canvas")}
         onLogin={() => { setAuthTab("login"); setView("auth"); }}
-        onTryGuest={() => setView("canvas")}
       />
     );
   }

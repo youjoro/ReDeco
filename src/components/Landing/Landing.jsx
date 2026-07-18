@@ -51,7 +51,7 @@ const MOCK_ITEMS = [
   },
 ];
 
-export default function Landing({ onGetStarted, onLogin, onTryGuest }) {
+export default function Landing({ onGetStarted, onLogin }) {
   return (
     <div className="landing">
 
@@ -63,7 +63,7 @@ export default function Landing({ onGetStarted, onLogin, onTryGuest }) {
         </div>
         <div className="landing__nav-actions">
           <button className="landing__nav-link" onClick={onLogin}>Log in</button>
-          <button className="landing__nav-btn" onClick={onGetStarted}>Try it free</button>
+          <button className="landing__nav-btn" onClick={onGetStarted}>Try it now</button>
         </div>
       </nav>
 
@@ -82,18 +82,13 @@ export default function Landing({ onGetStarted, onLogin, onTryGuest }) {
           </p>
           <div className="landing__hero-ctas">
             <button className="landing__cta-primary" onClick={onGetStarted}>
-              Start planning — it's free
+              Start planning — no sign-up needed
             </button>
             <button className="landing__cta-ghost" onClick={onLogin}>
               I have an account
             </button>
           </div>
-          <p className="landing__hero-note">No credit card · No download</p>
-          {onTryGuest && (
-            <button className="landing__guest-link" onClick={onTryGuest}>
-              Or try without an account →
-            </button>
-          )}
+          <p className="landing__hero-note">No credit card · No account required</p>
         </div>
 
         {/* Mock room preview */}

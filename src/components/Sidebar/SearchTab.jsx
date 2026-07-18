@@ -101,7 +101,7 @@ export default function SearchTab({ onAddItem }) {
                 onClick={() => !adding && handleAdd(img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
               >
                 <img
-                  src={img.previewURL} alt={img.tags} loading="lazy"
+                  src={img.previewURL?.replace(/^http:\/\//, "https://")} alt={img.tags} loading="lazy"
                   onError={(e) => { e.target.src = "https://placehold.co/120x120/fdf0e6/c4a882?text=?"; }}
                 />
                 {adding === img.webformatURL && <div className="search-tab__result-overlay">✂️</div>}

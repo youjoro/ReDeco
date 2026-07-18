@@ -31,11 +31,11 @@
 .landing__nav-logo {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
-  background: var(--accent-light);
   object-fit: contain;
-  padding: 4px;
   flex-shrink: 0;
+  background: #10b981;
+  border-radius: 8px;
+  padding: 4px;
 }
 
 .landing__nav-actions {

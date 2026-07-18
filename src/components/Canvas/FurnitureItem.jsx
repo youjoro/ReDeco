@@ -75,11 +75,22 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     window.addEventListener("touchend", end);
   };
 
+  // ── Rotate helpers ─────────────────────────────────────────────────────────
+  // Normalise an angle delta to [-180, 180] so crossing 0°/360° never jumps.
+  const normDelta = (d) => { while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
+
   // ── Mouse rotate ───────────────────────────────────────────────────────────
   const startMouseRotate = (e) => {
     e.stopPropagation(); e.preventDefault();
-    const move = (e) => onRotate(item.id, getRotationAngle(e.clientX, e.clientY));
-    const up   = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    let prev = getRotationAngle(e.clientX, e.clientY);
+    let rot  = item.rotation || 0;
+    const move = (e) => {
+      const cur = getRotationAngle(e.clientX, e.clientY);
+      rot = ((rot + normDelta(cur - prev)) % 360 + 360) % 360;
+      prev = cur;
+      onRotate(item.id, rot);
+    };
+    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", up);
   };
@@ -87,8 +98,17 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
   // ── Touch rotate ───────────────────────────────────────────────────────────
   const startTouchRotate = (e) => {
     e.stopPropagation();
-    const move = (e) => { const t = e.touches[0]; onRotate(item.id, getRotationAngle(t.clientX, t.clientY)); };
-    const end  = () => { window.removeEventListener("touchmove", move); window.removeEventListener("touchend", end); };
+    const t0 = e.touches[0];
+    let prev = getRotationAngle(t0.clientX, t0.clientY);
+    let rot  = item.rotation || 0;
+    const move = (e) => {
+      const t   = e.touches[0];
+      const cur = getRotationAngle(t.clientX, t.clientY);
+      rot = ((rot + normDelta(cur - prev)) % 360 + 360) % 360;
+      prev = cur;
+      onRotate(item.id, rot);
+    };
+    const end = () => { window.removeEventListener("touchmove", move); window.removeEventListener("touchend", end); };
     window.addEventListener("touchmove", move, { passive: true });
     window.addEventListener("touchend", end);
   };

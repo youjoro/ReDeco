@@ -68,6 +68,44 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
     ? { backgroundImage: `radial-gradient(circle, #c1c1c4 1px, transparent 1px), linear-gradient(to right, rgba(232,130,60,0.10) 1px, transparent 1px), linear-gradient(to bottom, rgba(232,130,60,0.10) 1px, transparent 1px)`, backgroundSize: `22px 22px, ${gridSize}px ${gridSize}px, ${gridSize}px ${gridSize}px` }
     : {};
 
+  // ── Drag and drop handlers ─────────────────────────────────────────────────
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const canvasRect = e.currentTarget.getBoundingClientRect();
+    const x = snap(e.clientX - canvasRect.left, gridSize);
+    const y = snap(e.clientY - canvasRect.top, gridSize);
+
+    // Handle data transfers (e.g., from sidebar drag source)
+    const data = e.dataTransfer.getData("application/json");
+    if (data) {
+      try {
+        const itemData = JSON.parse(data);
+        // Create a new item at the drop location
+        const maxZ = items.length > 0 ? Math.max(...items.map((i) => i.zOrder ?? 0)) : -1;
+        update((prev) => [...prev, {
+          id: Math.max(0, ...prev.map((i) => i.id)) + 1,
+          src: itemData.src,
+          label: itemData.label || "item",
+          x,
+          y,
+          width: itemData.width || 150,
+          height: itemData.height || 150,
+          rotation: 0,
+          zOrder: maxZ + 1,
+        }]);
+      } catch (err) {
+        console.error("Failed to parse dropped data:", err);
+      }
+    }
+  };
+
   return (
     <div className="canvas-wrap">
       {/* Mini bar */}
@@ -123,6 +161,8 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
         className={`canvas-area${background ? " canvas-area--has-bg" : ""}`}
         style={gridStyle}
         onClick={() => setSelectedId(null)}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
       >
         {background && (
           <img className="canvas-area__bg" src={background} alt="room background" draggable={false} />

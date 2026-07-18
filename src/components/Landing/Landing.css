@@ -168,6 +168,22 @@
   color: var(--text-faint);
 }
 
+.landing__guest-link {
+  display: inline-block;
+  margin-top: 10px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-faint);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+  padding: 0;
+}
+.landing__guest-link:hover { color: var(--text-sub); }
+
 /* ── Mock room preview ── */
 .landing__mock {
   border-radius: 18px;

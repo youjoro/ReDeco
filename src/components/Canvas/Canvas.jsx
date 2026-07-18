@@ -2,10 +2,7 @@ import { useState } from "react";
 import FurnitureItem from "./FurnitureItem";
 import GridSlider from "../GridSlider/GridSlider";
 import { snap } from "../../lib/snapGrid";
-import { loadImageSize, removeImageBackground } from "../../lib/imageUtils";
 import "./Canvas.css";
-
-let nextId = 1;
 
 export default function Canvas({ background, items, onItemsChange, onBackgroundChange, onAddToList }) {
   const [selectedId, setSelectedId] = useState(null);
@@ -13,9 +10,10 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
 
   const update = (fn) => onItemsChange(typeof fn === "function" ? fn(items) : fn);
 
-  const handleDrag   = (id, pos)  => update((p) => p.map((i) => i.id === id ? { ...i, ...pos }  : i));
-  const handleResize = (id, size) => update((p) => p.map((i) => i.id === id ? { ...i, ...size } : i));
-  const handleDelete = (id)       => { update((p) => p.filter((i) => i.id !== id)); setSelectedId(null); };
+  const handleDrag   = (id, pos)      => update((p) => p.map((i) => i.id === id ? { ...i, ...pos }      : i));
+  const handleResize = (id, size)     => update((p) => p.map((i) => i.id === id ? { ...i, ...size }     : i));
+  const handleRotate = (id, rotation) => update((p) => p.map((i) => i.id === id ? { ...i, rotation }    : i));
+  const handleDelete = (id)           => { update((p) => p.filter((i) => i.id !== id)); setSelectedId(null); };
 
   const showGrid = gridSize >= 4;
   const gridStyle = showGrid
@@ -55,6 +53,7 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
             onSelect={setSelectedId}
             onDrag={handleDrag}
             onResize={handleResize}
+            onRotate={handleRotate}
             onDelete={handleDelete}
             onAddToList={onAddToList}
             gridSize={gridSize}

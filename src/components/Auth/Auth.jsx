@@ -2,7 +2,7 @@ import { useState } from "react";
 import { signIn, signUp } from "../../lib/supabase";
 import "./Auth.css";
 
-export default function Auth({ onAuth, initialTab = "login", onBack }) {
+export default function Auth({ onAuth, initialTab = "login", onBack, onTryGuest }) {
   const [tab, setTab]         = useState(initialTab);
   const [email, setEmail]     = useState("");
   const [password, setPass]   = useState("");
@@ -82,6 +82,12 @@ export default function Auth({ onAuth, initialTab = "login", onBack }) {
         <p className="auth-hint">
           {tab === "login" ? "No account? Click Sign Up above" : "Already have one? Click Log In above"}
         </p>
+
+        {onTryGuest && (
+          <button className="auth-guest-link" onClick={onTryGuest}>
+            Continue without an account →
+          </button>
+        )}
       </div>
     </div>
   );

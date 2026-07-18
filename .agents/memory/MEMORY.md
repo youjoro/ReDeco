@@ -1,0 +1,2 @@
+- [Vite version constraint](vite-version.md) — Vite 6+ crashes with Bus error on this NixOS env; must stay on v5.x.
+- [Furniture catalog](furniture-catalog.md) — 80 mock items in local fixtures file, no Supabase table needed for demo.

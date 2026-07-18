@@ -147,6 +147,16 @@
   color: #fff;
   box-shadow: 0 1px 6px rgba(184,92,56,0.4);
 }
+.toolbar__plan-badge--guest {
+  background: rgba(255,255,255,0.06);
+  color: #a89d96;
+  border: 1px solid var(--toolbar-bdr);
+}
+
+.toolbar__btn--signin {
+  font-size: 12px;
+  padding: 6px 14px;
+}
 
 .toolbar__email {
   color: #a89d96;

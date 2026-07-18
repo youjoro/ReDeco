@@ -1,16 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Landing            from "./components/Landing/Landing";
 import Auth               from "./components/Auth/Auth";
-import Toolbar             from "./components/Toolbar/Toolbar";
-import Sidebar             from "./components/Sidebar/Sidebar";
-import Canvas               from "./components/Canvas/Canvas";
-import RoomManager          from "./components/RoomManager/RoomManager";
-import ShoppingListPanel    from "./components/ShoppingList/ShoppingListPanel";
-import PaywallModal         from "./components/Paywall/PaywallModal";
+import Toolbar            from "./components/Toolbar/Toolbar";
+import Sidebar            from "./components/Sidebar/Sidebar";
+import Canvas             from "./components/Canvas/Canvas";
+import RoomManager        from "./components/RoomManager/RoomManager";
+import ShoppingListPanel  from "./components/ShoppingList/ShoppingListPanel";
+import PaywallModal       from "./components/Paywall/PaywallModal";
 import { ShoppingListProvider, useShoppingList } from "./context/ShoppingListContext";
 import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./lib/supabase";
 import { snap } from "./lib/snapGrid";
-import { loadImageSize } from "./lib/imageUtils";
 import "./App.css";
 
 let nextId = 1;
@@ -23,17 +22,22 @@ const ACTIVITY_EVENTS   = ["mousemove", "mousedown", "keydown", "touchstart", "s
 export default function App() {
   const [user,        setUser]        = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [showRooms,   setShowRooms]   = useState(false);
-  const [itemPaywall, setItemPaywall] = useState(false);
-  const [currentRoom, setCurrentRoom] = useState({ id: null, name: "Untitled Room" });
-  const [saving,      setSaving]      = useState(false);
-  const [saveMsg,     setSaveMsg]     = useState("");
-  const [background,  setBackground]  = useState(null);
-  const [items,       setItems]       = useState([]);
-  const [sessionWarn, setSessionWarn] = useState(false); // show warning banner
-  const [view,        setView]        = useState("landing"); // "landing" | "auth"
-  const [authTab,     setAuthTab]     = useState("login");   // which tab Auth opens on
+  // "landing" | "auth" | "canvas"
+  const [view,        setView]        = useState("landing");
+  const [authTab,     setAuthTab]     = useState("login");
+
+  // Canvas state — shared between guest and authenticated sessions
+  const [showRooms,        setShowRooms]        = useState(false);
+  const [itemPaywall,      setItemPaywall]      = useState(false);
+  const [currentRoom,      setCurrentRoom]      = useState({ id: null, name: "Untitled Room" });
+  const [saving,           setSaving]           = useState(false);
+  const [saveMsg,          setSaveMsg]          = useState("");
+  const [background,       setBackground]       = useState(null);
+  const [items,            setItems]            = useState([]);
+  const [sessionWarn,      setSessionWarn]      = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
+  // Guest trying a protected action → show inline auth prompt
+  const [showAuthPrompt,   setShowAuthPrompt]   = useState(false);
 
   const logoutTimer = useRef(null);
   const warnTimer   = useRef(null);
@@ -44,12 +48,10 @@ export default function App() {
     clearTimeout(logoutTimer.current);
     clearTimeout(warnTimer.current);
 
-    // Show warning 2 mins before logout
     warnTimer.current = setTimeout(() => {
       setSessionWarn(true);
     }, INACTIVE_LIMIT_MS - WARN_BEFORE_MS);
 
-    // Auto sign out after inactivity limit
     logoutTimer.current = setTimeout(async () => {
       setSessionWarn(false);
       await signOut();
@@ -76,11 +78,18 @@ export default function App() {
 
   useEffect(() => {
     getUser()
-      .then((u) => { setUser(u); })
+      .then((u) => {
+        setUser(u);
+        // If already logged in on mount, go straight to canvas.
+        if (u) setView("canvas");
+      })
       .catch(() => {})
       .finally(() => setAuthLoading(false));
 
-    const { data: { subscription } } = onAuthChange((u) => setUser(u));
+    const { data: { subscription } } = onAuthChange((u) => {
+      setUser(u);
+      if (u) setView("canvas");
+    });
     return () => subscription.unsubscribe();
   }, []);
 
@@ -98,11 +107,13 @@ export default function App() {
       x: snap(80 + Math.random() * 200, 0),
       y: snap(60 + Math.random() * 120, 0),
       width: size.width, height: size.height,
+      rotation: 0,
     }]);
   };
 
-  // ── Save to Supabase ──
+  // ── Save to Supabase (requires auth) ──
   const handleSave = async () => {
+    if (!user) { setShowAuthPrompt(true); return; }
     setSaving(true); setSaveMsg("");
     try {
       const uploadedItems = await Promise.all(items.map(async (item) => {
@@ -154,6 +165,18 @@ export default function App() {
     setShowRooms(false);
   };
 
+  // ── Guest triggers a protected action ────────────────────────────────────
+  const handleNeedAuth = () => {
+    setShowAuthPrompt(true);
+  };
+
+  const goToAuth = (tab = "login") => {
+    setShowAuthPrompt(false);
+    setAuthTab(tab);
+    setView("auth");
+  };
+
+  // ── Loading spinner ───────────────────────────────────────────────────────
   if (authLoading) return (
     <div className="app__loading">
       <div style={{ textAlign: "center" }}>
@@ -163,27 +186,33 @@ export default function App() {
     </div>
   );
 
-  if (!user) {
-    if (view === "landing") {
-      return (
-        <Landing
-          onGetStarted={() => { setAuthTab("signup"); setView("auth"); }}
-          onLogin={() => { setAuthTab("login"); setView("auth"); }}
-        />
-      );
-    }
+  // ── Landing page ──────────────────────────────────────────────────────────
+  if (view === "landing") {
     return (
-      <Auth
-        initialTab={authTab}
-        onAuth={() => getUser().then(setUser)}
-        onBack={() => setView("landing")}
+      <Landing
+        onGetStarted={() => { setAuthTab("signup"); setView("auth"); }}
+        onLogin={() => { setAuthTab("login"); setView("auth"); }}
+        onTryGuest={() => setView("canvas")}
       />
     );
   }
 
+  // ── Auth page ─────────────────────────────────────────────────────────────
+  if (view === "auth" && !user) {
+    return (
+      <Auth
+        initialTab={authTab}
+        onAuth={() => getUser().then(setUser)}
+        onBack={() => setView(view === "auth" ? "landing" : "canvas")}
+        onTryGuest={() => setView("canvas")}
+      />
+    );
+  }
+
+  // ── Canvas (guest or authenticated) ──────────────────────────────────────
   return (
     <ShoppingListProvider user={user}>
-      <AuthenticatedApp
+      <CanvasApp
         user={user}
         isPro={isPro}
         currentRoom={currentRoom}
@@ -195,6 +224,7 @@ export default function App() {
         resetTimers={resetTimers}
         showRooms={showRooms}
         showShoppingList={showShoppingList}
+        showAuthPrompt={showAuthPrompt}
         setShowShoppingList={setShowShoppingList}
         setShowRooms={setShowRooms}
         setBackground={setBackground}
@@ -204,6 +234,9 @@ export default function App() {
         onAddItem={handleAddItem}
         onLoadRoom={handleLoadRoom}
         onNewRoom={handleNewRoom}
+        onNeedAuth={handleNeedAuth}
+        onCloseAuthPrompt={() => setShowAuthPrompt(false)}
+        onGoToAuth={goToAuth}
         itemPaywall={itemPaywall}
         setItemPaywall={setItemPaywall}
       />
@@ -211,12 +244,14 @@ export default function App() {
   );
 }
 
-// ── Inner shell — rendered inside the ShoppingListProvider so it can read the
-//    cart count/badge and pass a bound "add to list" handler down to Canvas ──
-function AuthenticatedApp({
+// ── Inner shell — rendered inside ShoppingListProvider ───────────────────────
+function CanvasApp({
   user, isPro, currentRoom, saving, saveMsg, background, items, sessionWarn, resetTimers,
-  showRooms, showShoppingList, setShowShoppingList, setShowRooms,
-  setBackground, setItems, onSave, onRename, onAddItem, onLoadRoom, onNewRoom,
+  showRooms, showShoppingList, showAuthPrompt,
+  setShowShoppingList, setShowRooms,
+  setBackground, setItems,
+  onSave, onRename, onAddItem, onLoadRoom, onNewRoom,
+  onNeedAuth, onCloseAuthPrompt, onGoToAuth,
   itemPaywall, setItemPaywall,
 }) {
   const { count, addToList } = useShoppingList();
@@ -231,9 +266,10 @@ function AuthenticatedApp({
         saveMsg={saveMsg}
         onSave={onSave}
         onRename={onRename}
-        onOpenRooms={() => setShowRooms(true)}
+        onOpenRooms={() => user ? setShowRooms(true) : onNeedAuth()}
         onOpenShoppingList={() => setShowShoppingList(true)}
         shoppingCount={count}
+        onSignIn={onNeedAuth}
       />
 
       {sessionWarn && (
@@ -259,7 +295,7 @@ function AuthenticatedApp({
         />
       </div>
 
-      {showRooms && (
+      {showRooms && user && (
         <RoomManager
           isPro={isPro}
           onClose={() => setShowRooms(false)}
@@ -278,6 +314,28 @@ function AuthenticatedApp({
           count={items.length}
           onClose={() => setItemPaywall(false)}
         />
+      )}
+
+      {/* Auth prompt for guests trying protected actions */}
+      {showAuthPrompt && (
+        <div className="app__auth-prompt-overlay" onClick={onCloseAuthPrompt}>
+          <div className="app__auth-prompt" onClick={(e) => e.stopPropagation()}>
+            <button className="app__auth-prompt-close" onClick={onCloseAuthPrompt}>×</button>
+            <span className="app__auth-prompt-icon">🔐</span>
+            <h3 className="app__auth-prompt-title">Sign in to save your work</h3>
+            <p className="app__auth-prompt-sub">
+              Your moodboard is safe while you browse. Create a free account to save rooms and access them anywhere.
+            </p>
+            <div className="app__auth-prompt-actions">
+              <button className="app__auth-prompt-primary" onClick={() => onGoToAuth("signup")}>
+                Create free account
+              </button>
+              <button className="app__auth-prompt-ghost" onClick={() => onGoToAuth("login")}>
+                I have an account
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -5,6 +5,7 @@
   border-radius: 6px;
   outline: 2px solid transparent;
   transition: outline 0.1s, box-shadow 0.1s;
+  transform-origin: center center;
 }
 
 .furniture:hover,
@@ -47,6 +48,7 @@
   line-height: 1;
 }
 
+/* ── Resize handle (bottom-right) ── */
 .furniture__resize {
   position: absolute;
   bottom: -5px;
@@ -59,6 +61,29 @@
   cursor: nwse-resize;
   z-index: 60;
 }
+
+/* ── Rotate handle (bottom-left) ── */
+.furniture__rotate {
+  position: absolute;
+  bottom: -9px;
+  left: -9px;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-2-light);
+  color: var(--accent-2);
+  border: 2px solid var(--accent-2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: grab;
+  z-index: 60;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  line-height: 1;
+  user-select: none;
+}
+.furniture__rotate:active { cursor: grabbing; }
 
 .furniture__cart {
   position: absolute;
@@ -97,6 +122,14 @@
     bottom: -8px;
     right: -8px;
     border-width: 3px;
+  }
+
+  .furniture__rotate {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+    bottom: -12px;
+    left: -12px;
   }
 
   .furniture__cart {

@@ -3,8 +3,26 @@ import FeedbackButton from "../Feedback/FeedbackButton";
 import { useTheme } from "../../context/ThemeContext";
 import "./Toolbar.css";
 
-export default function Toolbar({ user, isPro, roomName, saving, saveMsg, onSave, onRename, onOpenRooms, onOpenShoppingList, shoppingCount = 0 }) {
+export default function Toolbar({
+  user, isPro,
+  roomName, saving, saveMsg,
+  onSave, onRename, onOpenRooms, onOpenShoppingList,
+  shoppingCount = 0,
+  onSignIn,          // called when a guest taps a protected action
+}) {
   const { theme, toggle } = useTheme();
+  const isGuest = !user;
+
+  const guardedSave = () => {
+    if (isGuest) { onSignIn?.(); return; }
+    onSave();
+  };
+
+  const guardedRooms = () => {
+    if (isGuest) { onSignIn?.(); return; }
+    onOpenRooms();
+  };
+
   return (
     <div className="toolbar">
       <div className="toolbar__brand">
@@ -14,11 +32,11 @@ export default function Toolbar({ user, isPro, roomName, saving, saveMsg, onSave
 
       <div className="toolbar__divider" />
 
-      <button className="toolbar__room-name" onClick={onRename}>
+      <button className="toolbar__room-name" onClick={isGuest ? guardedSave : onRename}>
         ✏️ {roomName}
       </button>
 
-      <button className="toolbar__btn toolbar__btn--ghost" onClick={onOpenRooms}>
+      <button className="toolbar__btn toolbar__btn--ghost" onClick={guardedRooms}>
         📂 Rooms
       </button>
 
@@ -27,7 +45,7 @@ export default function Toolbar({ user, isPro, roomName, saving, saveMsg, onSave
         {shoppingCount > 0 && <span className="toolbar__cart-badge">{shoppingCount}</span>}
       </button>
 
-      <button className="toolbar__btn toolbar__btn--primary" onClick={onSave} disabled={saving}>
+      <button className="toolbar__btn toolbar__btn--primary" onClick={guardedSave} disabled={saving}>
         {saving ? "Saving…" : "💾 Save"}
       </button>
 
@@ -38,22 +56,39 @@ export default function Toolbar({ user, isPro, roomName, saving, saveMsg, onSave
       )}
 
       <div className="toolbar__right">
-        <span className={`toolbar__plan-badge ${isPro ? "toolbar__plan-badge--pro" : "toolbar__plan-badge--free"}`}>
-          {isPro ? "✦ Pro" : "Free"}
-        </span>
-        <button
-          className="toolbar__theme-toggle"
-          onClick={toggle}
-          aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-          title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-        >
-          {theme === "light" ? "🌙" : "☀️"}
-        </button>
-        <FeedbackButton user={user} />
-        <span className="toolbar__email">{user?.email}</span>
-        <button className="toolbar__btn toolbar__btn--ghost" onClick={signOut}>
-          Sign out
-        </button>
+        {isGuest ? (
+          <>
+            <span className="toolbar__plan-badge toolbar__plan-badge--guest">Guest</span>
+            <button
+              className="toolbar__theme-toggle"
+              onClick={toggle}
+              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            >
+              {theme === "light" ? "🌙" : "☀️"}
+            </button>
+            <button className="toolbar__btn toolbar__btn--primary toolbar__btn--signin" onClick={onSignIn}>
+              Sign in
+            </button>
+          </>
+        ) : (
+          <>
+            <span className={`toolbar__plan-badge ${isPro ? "toolbar__plan-badge--pro" : "toolbar__plan-badge--free"}`}>
+              {isPro ? "✦ Pro" : "Free"}
+            </span>
+            <button
+              className="toolbar__theme-toggle"
+              onClick={toggle}
+              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            >
+              {theme === "light" ? "🌙" : "☀️"}
+            </button>
+            <FeedbackButton user={user} />
+            <span className="toolbar__email">{user?.email}</span>
+            <button className="toolbar__btn toolbar__btn--ghost" onClick={signOut}>
+              Sign out
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -51,7 +51,7 @@ const MOCK_ITEMS = [
   },
 ];
 
-export default function Landing({ onGetStarted, onLogin }) {
+export default function Landing({ onGetStarted, onLogin, onTryGuest }) {
   return (
     <div className="landing">
 
@@ -89,6 +89,11 @@ export default function Landing({ onGetStarted, onLogin }) {
             </button>
           </div>
           <p className="landing__hero-note">No credit card · No download</p>
+          {onTryGuest && (
+            <button className="landing__guest-link" onClick={onTryGuest}>
+              Or try without an account →
+            </button>
+          )}
         </div>
 
         {/* Mock room preview */}

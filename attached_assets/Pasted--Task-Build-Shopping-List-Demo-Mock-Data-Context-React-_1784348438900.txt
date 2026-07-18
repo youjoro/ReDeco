@@ -1,0 +1,47 @@
+# Task: Build Shopping List Demo (Mock Data)
+
+## Context
+React app. Existing: 2D drag-and-drop moodboard, auth, database. Missing: shopping list feature. Goal is a working demo, not real data — prove the interaction works end-to-end.
+
+## Access model
+- Moodboard is usable without signing in (guests can drag/drop and build a board)
+- Saving a room requires sign-in — guests can build but not persist/save a board
+- Shopping list should follow the same rule: usable while browsing as a guest, but persists only once signed in
+
+## Images: use the existing Pixabay API integration
+- App already uses Pixabay's API for images — keep using it for furniture item images, no need to switch providers
+- Search by furniture term ("sofa", "armchair", "coffee table", "bookshelf", "lamp") to pull ~5-10 images
+- Pixabay license permits commercial use without attribution required, so this is fine for the demo and beyond
+
+## Data: hardcode it, no real catalog yet
+- ~80 mock furniture items — enough variety that the catalog/search/shopping list feel real, not sparse
+- Each item needs: name, tags, image_url (from Pixabay), price (fake number, varied so totals look realistic), retailer_name (rotate a few fake names — "Demo Store", "Fauxfurn Co.", "Placeholder Living" — not all identical), product_url (fake but plausible-looking, e.g. `https://example-store.com/product/1234`, not just "#")
+- Either hardcode as a JS array in a fixtures file, OR insert as rows in the existing `furniture_items` table (add price/retailer_name/product_url columns if missing) — fixtures file is faster if just testing UI
+
+## Build this
+1. `shopping_lists` table: id, user_id, name (optional)
+2. `shopping_list_items` table: id, shopping_list_id, furniture_item_id, quantity
+3. "Add to shopping list" button/action on furniture items in the moodboard
+4. Shopping list panel: item thumbnail, price, retailer, quantity stepper, remove button, running total
+5. Keep it optimistic client-side (state updates instantly, syncs to DB in background — don't block UI per action)
+
+## Moodboard image controls (add to existing drag-drop items)
+- Resize: let user scale a placed furniture image up/down (drag corner handle or similar), store scale value with the placed item
+- Skew: let user tilt/skew a placed image for basic perspective effect, store skew/rotation value with the placed item
+- These transform values need to persist per placed item — save alongside its position (x/y) so a saved room reloads with the same size/skew, not just position
+
+## Security basics (apply throughout, don't skip)
+- Sanitize/validate any user-editable text fields before saving (item names if user-added, room names, etc.) to prevent injection/XSS
+- Keep RLS (row-level security) policies on `shopping_lists` / `shopping_list_items` so users can only read/write their own rows — don't rely on frontend checks alone
+- Validate transform values (resize/skew) server-side within sane numeric bounds before saving, don't trust raw client input unchecked
+- Rate-limit or cache Pixabay API calls if search-as-you-type is added, so the key isn't exposed to abuse
+- Never expose the Pixabay API key (or any key) in client-side code — proxy through backend if the current setup doesn't already do this
+
+## Explicitly skip for now
+- Real catalog data / DataForSEO integration
+- Multi-retailer price comparison (one item = one price for now)
+- Affiliate links, live pricing, cron jobs
+- Search beyond basic tag match
+
+## Definition of done
+User can: drag furniture onto moodboard → resize/skew it → add it to shopping list → see it in the list with price → adjust quantity → remove it → see correct running total, across a demo catalog with enough variety (~80 items) to feel real. Guest access and basic security (RLS, input validation, no exposed keys) hold throughout.

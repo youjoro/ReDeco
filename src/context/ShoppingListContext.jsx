@@ -1,50 +1,58 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   getOrCreateShoppingList,
-  loadFurnitureCatalog,
   loadShoppingListItems,
   addShoppingListItem,
   updateShoppingListItemQuantity,
   removeShoppingListItem,
 } from "../lib/supabase";
 import { matchFurnitureToCatalog } from "../lib/shoppingMatch";
+import { FURNITURE_FIXTURES } from "../lib/furnitureFixtures";
 
-// NOTE: the spec suggested Zustand or React Query for this. To keep the
-// project dependency-free (nothing else in the app uses either), this is
-// built with plain React Context + useState instead. It still does
-// optimistic updates — UI changes are applied immediately and the backend
-// call happens in the background; on failure the optimistic change is
-// rolled back and an error is surfaced.
+// Catalog is always the local fixtures — no Supabase call needed.
+// Shopping list rows are stored in Supabase when the user is logged in,
+// and in local state only when browsing as a guest.
 
 const ShoppingListContext = createContext(null);
 
 export function ShoppingListProvider({ user, children }) {
-  const [listId, setListId]   = useState(null);
-  const [catalog, setCatalog] = useState([]);
-  const [items, setItems]     = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState("");
+  const [listId, setListId] = useState(null);
+  const [items,  setItems]  = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
 
-  // ── Load catalog + list + items once the user is available ────────────────
+  // Catalog is always the local fixture data — fast, no network needed.
+  const catalog = FURNITURE_FIXTURES;
+
+  // ── Load persisted list when user logs in; clear DB state when they log out ─
   useEffect(() => {
-    if (!user) { setItems([]); setCatalog([]); setListId(null); setLoading(false); return; }
+    if (!user) {
+      // Guest mode: keep any locally-built list, just disconnect from DB.
+      setListId(null);
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
     setLoading(true);
 
     (async () => {
       try {
-        const [list, catalogRows] = await Promise.all([
-          getOrCreateShoppingList(),
-          loadFurnitureCatalog(),
-        ]);
+        const list = await getOrCreateShoppingList();
         if (cancelled) return;
         setListId(list.id);
-        setCatalog(catalogRows);
 
-        const listItems = await loadShoppingListItems(list.id);
+        const dbItems = await loadShoppingListItems(list.id);
         if (cancelled) return;
-        setItems(listItems);
+        // Merge: keep any guest items that aren't already in the DB list,
+        // then append the DB rows (DB wins for duplicates).
+        setItems((prev) => {
+          const dbIds = new Set(dbItems.map((i) => i.furniture_item_id));
+          const guestOnly = prev.filter(
+            (i) => i.id?.startsWith("local-") && !dbIds.has(i.furniture_item_id)
+          );
+          return [...guestOnly, ...dbItems];
+        });
       } catch (err) {
         if (!cancelled) setError(err.message || "Failed to load shopping list.");
       } finally {
@@ -56,21 +64,32 @@ export function ShoppingListProvider({ user, children }) {
   }, [user]);
 
   // ── Add a canvas furniture item to the list ────────────────────────────────
-  // canvasItem: { label, ... } from the moodboard canvas
-  // roomId: currentRoom.id, so the item can be traced back to the moodboard it came from
   const addToList = useCallback(async (canvasItem, roomId = null) => {
-    if (!listId) return;
     const catalogMatch = matchFurnitureToCatalog(canvasItem.label || "", catalog);
     if (!catalogMatch) return;
 
-    // If this catalog item is already in the list, just bump quantity
+    // Bump quantity if already present.
     const existing = items.find((i) => i.furniture_item_id === catalogMatch.id);
     if (existing) {
       await updateQuantity(existing.id, existing.quantity + 1);
       return;
     }
 
-    // Optimistic insert with a temporary id
+    if (!listId) {
+      // Guest mode: add to local state only.
+      const localRow = {
+        id: `local-${Date.now()}`,
+        shopping_list_id: null,
+        furniture_item_id: catalogMatch.id,
+        quantity: 1,
+        added_from_moodboard_id: roomId,
+        furniture_items: catalogMatch,
+      };
+      setItems((prev) => [...prev, localRow]);
+      return;
+    }
+
+    // Logged-in: optimistic insert.
     const tempId = `temp-${Date.now()}`;
     const optimisticRow = {
       id: tempId,
@@ -91,44 +110,53 @@ export function ShoppingListProvider({ user, children }) {
       });
       setItems((prev) => prev.map((i) => (i.id === tempId ? saved : i)));
     } catch (err) {
-      setItems((prev) => prev.filter((i) => i.id !== tempId)); // roll back
+      setItems((prev) => prev.filter((i) => i.id !== tempId));
       setError("Couldn't add item — please try again.");
     }
   }, [listId, catalog, items]);
 
-  // ── Update quantity (also used internally by addToList for "already in list") ─
+  // ── Update quantity ────────────────────────────────────────────────────────
   const updateQuantity = useCallback(async (itemId, quantity) => {
-    if (quantity <= 0) return removeItem(itemId);
+    if (quantity <= 0) { removeItem(itemId); return; }
 
     const prevItems = items;
     setItems((cur) => cur.map((i) => (i.id === itemId ? { ...i, quantity } : i)));
 
+    // Guest rows (local- prefix) or temp rows: no DB call.
+    if (typeof itemId === "string" && (itemId.startsWith("local-") || itemId.startsWith("temp-"))) return;
+    if (!listId) return;
+
     try {
       await updateShoppingListItemQuantity(itemId, quantity);
     } catch {
-      setItems(prevItems); // roll back
+      setItems(prevItems);
       setError("Couldn't update quantity — please try again.");
     }
-  }, [items]);
+  }, [items, listId]);
 
-  // ── Remove item ─────────────────────────────────────────────────────────────
+  // ── Remove item ────────────────────────────────────────────────────────────
   const removeItem = useCallback(async (itemId) => {
     const prevItems = items;
     setItems((cur) => cur.filter((i) => i.id !== itemId));
 
+    if (typeof itemId === "string" && (itemId.startsWith("local-") || itemId.startsWith("temp-"))) return;
+    if (!listId) return;
+
     try {
       await removeShoppingListItem(itemId);
     } catch {
-      setItems(prevItems); // roll back
+      setItems(prevItems);
       setError("Couldn't remove item — please try again.");
     }
-  }, [items]);
+  }, [items, listId]);
 
   const total = items.reduce((sum, i) => sum + (i.furniture_items?.price || 0) * i.quantity, 0);
   const count = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <ShoppingListContext.Provider value={{ items, loading, error, total, count, addToList, updateQuantity, removeItem, clearError: () => setError("") }}>
+    <ShoppingListContext.Provider
+      value={{ items, loading, error, total, count, addToList, updateQuantity, removeItem, clearError: () => setError("") }}
+    >
       {children}
     </ShoppingListContext.Provider>
   );

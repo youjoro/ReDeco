@@ -10,6 +10,7 @@ channel = "stable-25_05"
 [userenv.shared]
 VITE_SUPABASE_ANON_KEY = "sb_publishable_-pfh16fQr4xWwR3nRRKJFg_myrJjfxJ"
 VITE_SUPABASE_URL = "https://nxmsspnidydlyrsvwqdb.supabase.co"
+VITE_PIXABAY_KEY = "56620517-2f24811d082f964fc82559f2c"
 
 [workflows]
 runButton = "Project"

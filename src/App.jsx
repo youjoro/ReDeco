@@ -39,8 +39,23 @@ export default function App() {
   // Guest trying a protected action → show inline auth prompt
   const [showAuthPrompt,   setShowAuthPrompt]   = useState(false);
 
-  const logoutTimer = useRef(null);
-  const warnTimer   = useRef(null);
+  const logoutTimer  = useRef(null);
+  const warnTimer    = useRef(null);
+  const curtainTimer = useRef(null);
+  const [curtain, setCurtain] = useState(false);
+
+  // ── Animated page navigation ──────────────────────────────────────────────
+  // Fades the curtain overlay in, swaps the view, then fades it back out.
+  const navigateTo = useCallback((newView, tab) => {
+    if (tab) setAuthTab(tab);
+    setCurtain(true);
+    clearTimeout(curtainTimer.current);
+    curtainTimer.current = setTimeout(() => {
+      setView(newView);
+      // Two rAF passes ensure the new view has rendered before we fade out.
+      requestAnimationFrame(() => requestAnimationFrame(() => setCurtain(false)));
+    }, 300); // matches curtain-in transition duration
+  }, []);
 
   // ── Reset both timers on any user activity ────────────────────────────────
   const resetTimers = useCallback(() => {
@@ -88,7 +103,7 @@ export default function App() {
 
     const { data: { subscription } } = onAuthChange((u) => {
       setUser(u);
-      if (u) setView("canvas");
+      if (u) navigateTo("canvas");
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -172,74 +187,74 @@ export default function App() {
 
   const goToAuth = (tab = "login") => {
     setShowAuthPrompt(false);
-    setAuthTab(tab);
-    setView("auth");
+    navigateTo("auth", tab);
   };
 
-  // ── Loading spinner ───────────────────────────────────────────────────────
-  if (authLoading) return (
-    <div className="app__loading">
-      <div style={{ textAlign: "center" }}>
-        <span className="app__loading-icon">🪴</span>
-        <p className="app__loading-text">Loading…</p>
-      </div>
-    </div>
-  );
-
-  // ── Landing page ──────────────────────────────────────────────────────────
-  if (view === "landing") {
-    return (
-      <Landing
-        onGetStarted={() => setView("canvas")}
-        onLogin={() => { setAuthTab("login"); setView("auth"); }}
-      />
-    );
-  }
-
-  // ── Auth page ─────────────────────────────────────────────────────────────
-  if (view === "auth" && !user) {
-    return (
-      <Auth
-        initialTab={authTab}
-        onAuth={() => getUser().then(setUser)}
-        onBack={() => setView(view === "auth" ? "landing" : "canvas")}
-        onTryGuest={() => setView("canvas")}
-      />
-    );
-  }
-
-  // ── Canvas (guest or authenticated) ──────────────────────────────────────
+  // ── Single render tree (curtain lives here across all views) ────────────
   return (
-    <ShoppingListProvider user={user}>
-      <CanvasApp
-        user={user}
-        isPro={isPro}
-        currentRoom={currentRoom}
-        saving={saving}
-        saveMsg={saveMsg}
-        background={background}
-        items={items}
-        sessionWarn={sessionWarn}
-        resetTimers={resetTimers}
-        showRooms={showRooms}
-        showShoppingList={showShoppingList}
-        showAuthPrompt={showAuthPrompt}
-        setShowShoppingList={setShowShoppingList}
-        setShowRooms={setShowRooms}
-        setBackground={setBackground}
-        setItems={setItems}
-        onSave={handleSave}
-        onRename={handleRename}
-        onAddItem={handleAddItem}
-        onLoadRoom={handleLoadRoom}
-        onNewRoom={handleNewRoom}
-        onNeedAuth={handleNeedAuth}
-        onCloseAuthPrompt={() => setShowAuthPrompt(false)}
-        onGoToAuth={goToAuth}
-        itemPaywall={itemPaywall}
-        setItemPaywall={setItemPaywall}
-      />
-    </ShoppingListProvider>
+    <>
+      {/* Transition curtain — always in the DOM, fades in/out on nav */}
+      <div className={`app__curtain${curtain ? " app__curtain--visible" : ""}`} />
+
+      {authLoading ? (
+        // ── Loading spinner ──
+        <div className="app__loading">
+          <div style={{ textAlign: "center" }}>
+            <span className="app__loading-icon">🪴</span>
+            <p className="app__loading-text">Loading…</p>
+          </div>
+        </div>
+
+      ) : view === "landing" ? (
+        // ── Landing page ──
+        <Landing
+          onGetStarted={() => navigateTo("canvas")}
+          onLogin={() => navigateTo("auth", "login")}
+        />
+
+      ) : view === "auth" && !user ? (
+        // ── Auth page ──
+        <Auth
+          initialTab={authTab}
+          onAuth={() => getUser().then(setUser)}
+          onBack={() => navigateTo("landing")}
+          onTryGuest={() => navigateTo("canvas")}
+        />
+
+      ) : (
+        // ── Canvas (guest or authenticated) ──
+        <ShoppingListProvider user={user}>
+          <CanvasApp
+            user={user}
+            isPro={isPro}
+            currentRoom={currentRoom}
+            saving={saving}
+            saveMsg={saveMsg}
+            background={background}
+            items={items}
+            sessionWarn={sessionWarn}
+            resetTimers={resetTimers}
+            showRooms={showRooms}
+            showShoppingList={showShoppingList}
+            showAuthPrompt={showAuthPrompt}
+            setShowShoppingList={setShowShoppingList}
+            setShowRooms={setShowRooms}
+            setBackground={setBackground}
+            setItems={setItems}
+            onSave={handleSave}
+            onRename={handleRename}
+            onAddItem={handleAddItem}
+            onLoadRoom={handleLoadRoom}
+            onNewRoom={handleNewRoom}
+            onNeedAuth={handleNeedAuth}
+            onCloseAuthPrompt={() => setShowAuthPrompt(false)}
+            onGoToAuth={goToAuth}
+            itemPaywall={itemPaywall}
+            setItemPaywall={setItemPaywall}
+          />
+        </ShoppingListProvider>
+      )}
+    </>
   );
 }
 
@@ -257,19 +272,21 @@ function CanvasApp({
 
   return (
     <div className="app">
-      <Toolbar
-        user={user}
-        isPro={isPro}
-        roomName={currentRoom.name}
-        saving={saving}
-        saveMsg={saveMsg}
-        onSave={onSave}
-        onRename={onRename}
-        onOpenRooms={() => user ? setShowRooms(true) : onNeedAuth()}
-        onOpenShoppingList={() => setShowShoppingList(true)}
-        shoppingCount={count}
-        onSignIn={onNeedAuth}
-      />
+      <div className="canvas-enter-toolbar">
+        <Toolbar
+          user={user}
+          isPro={isPro}
+          roomName={currentRoom.name}
+          saving={saving}
+          saveMsg={saveMsg}
+          onSave={onSave}
+          onRename={onRename}
+          onOpenRooms={() => user ? setShowRooms(true) : onNeedAuth()}
+          onOpenShoppingList={() => setShowShoppingList(true)}
+          shoppingCount={count}
+          onSignIn={onNeedAuth}
+        />
+      </div>
 
       {sessionWarn && (
         <div className="app__session-warn">
@@ -278,13 +295,15 @@ function CanvasApp({
         </div>
       )}
 
-      <div className="app__body">
-        <Sidebar
-          background={background}
-          onAddItem={onAddItem}
-          onSetBackground={setBackground}
-          onClearBackground={() => setBackground(null)}
-        />
+      <div className="app__body canvas-enter-body">
+        <div className="canvas-enter-sidebar">
+          <Sidebar
+            background={background}
+            onAddItem={onAddItem}
+            onSetBackground={setBackground}
+            onClearBackground={() => setBackground(null)}
+          />
+        </div>
         <Canvas
           background={background}
           items={items}

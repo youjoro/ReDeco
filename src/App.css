@@ -72,6 +72,63 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Page transition curtain ── */
+.app__curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: var(--bg, #f5f0eb);
+  opacity: 0;
+  transition: opacity 0.28s ease-in;
+}
+.app__curtain--visible {
+  opacity: 1;
+  pointer-events: all;
+  transition: opacity 0.28s ease-in;
+}
+
+/* ── Canvas entrance animations ── */
+/* Toolbar slides down from the top */
+@keyframes canvasToolbarIn {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Sidebar slides in from the left */
+@keyframes canvasSidebarIn {
+  from { opacity: 0; transform: translateX(-22px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+/* Canvas area fades and drifts up slightly */
+@keyframes canvasBodyIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Wrapper sizing — must match the children they wrap so flex layout is preserved */
+.canvas-enter-toolbar {
+  flex-shrink: 0;
+  animation: canvasToolbarIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+.canvas-enter-sidebar {
+  /* Mirror sidebar's own sizing so the flex layout is unchanged */
+  width: 260px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  animation: canvasSidebarIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+}
+@media (max-width: 640px) {
+  .canvas-enter-sidebar {
+    width: 100%;
+    height: auto;
+    flex-shrink: unset;
+  }
+}
+.canvas-enter-body {
+  animation: canvasBodyIn 0.44s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+}
+
 /* ── Guest auth prompt modal ── */
 .app__auth-prompt-overlay {
   position: fixed;

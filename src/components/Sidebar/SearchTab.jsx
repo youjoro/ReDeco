@@ -45,6 +45,17 @@ export default function SearchTab({ onAddItem }) {
     } finally { setAdding(null); }
   };
 
+  const handleDragStart = (e, src, label) => {
+    const itemData = {
+      src,
+      label: label || "furniture",
+      width: 150,
+      height: 150,
+    };
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("application/json", JSON.stringify(itemData));
+  };
+
   return (
     <div className="search-tab">
       {/* Search bar */}
@@ -99,6 +110,8 @@ export default function SearchTab({ onAddItem }) {
                 key={img.id}
                 className={`search-tab__result${adding === img.webformatURL ? " search-tab__result--adding" : ""}`}
                 onClick={() => !adding && handleAdd(img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
+                draggable
+                onDragStart={(e) => handleDragStart(e, img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
               >
                 <img
                   src={img.previewURL?.replace(/^http:\/\//, "https://")} alt={img.tags}

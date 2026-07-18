@@ -7,11 +7,15 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
   },
+  optimizeDeps: {
+    // @imgly/background-removal dynamically imports onnxruntime-web at runtime
+    // in the browser — exclude from pre-bundling so the dev server doesn't
+    // try to resolve them at startup.
+    exclude: ['onnxruntime-web', 'onnxruntime-web/webgpu'],
+  },
   build: {
     rollupOptions: {
-      // @imgly/background-removal dynamically imports onnxruntime-web/webgpu at
-      // runtime in the browser — Rollup cannot resolve it at build time, so we
-      // tell it to leave these imports alone and let the browser handle them.
+      // Same reason: leave these dynamic imports for the browser to handle.
       external: ['onnxruntime-web', 'onnxruntime-web/webgpu'],
     },
   },

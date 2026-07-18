@@ -1,41 +1,40 @@
 # ReDeco — Room Planner
 
-A React + Vite room design/moodboard app. Users can upload a photo of their room, place and arrange furniture on a canvas, save rooms, and build a shopping list.
+A browser-based interior design moodboard. Authenticated users can upload a room photo as a canvas background, search Pixabay or upload their own furniture images (with automatic background removal), drag/resize/snap furniture pieces, save multiple named rooms, and manage a shopping list.
 
 ## Stack
 
-- **Frontend:** React 19 + Vite 5 (downgraded from v8 for NixOS binary compatibility)
-- **Auth & Database:** Supabase (auth, `rooms`, `shopping_lists`, `shopping_list_items` tables, `room-images` storage bucket)
-- **Catalog:** Local fixture file (`src/lib/furnitureFixtures.js`) — 80 mock items, no Supabase table needed
-- **Background removal:** `@imgly/background-removal`
-- **Image search:** Pixabay API (`VITE_PIXABAY_KEY`)
+- **React 19** + TypeScript + Vite 5
+- **Supabase** — auth, database (rooms, shopping lists), and image storage
+- **@imgly/background-removal** — client-side AI background removal
+- **Recharts** — analytics/charts
+- **Sentry** — error tracking (optional)
 
-## Running
+## Running on Replit
 
-```bash
-npm install
+```
 npm run dev
 ```
 
-Runs on port 5000. The workflow "Start application" starts this automatically.
+Starts the Vite dev server on port 5000. The `Start application` workflow runs this automatically.
 
 ## Environment Variables
 
-| Key | Description |
-|-----|-------------|
-| `VITE_SUPABASE_URL` | Supabase project URL (set in Replit shared env) |
-| `VITE_SUPABASE_ANON_KEY` | Supabase publishable anon key (set in Replit shared env) |
-| `VITE_PIXABAY_KEY` | Pixabay API key — optional, needed for image search tab |
+Set in Replit Secrets / env vars (all required unless noted):
 
-## Features
+| Key | Purpose |
+|-----|---------|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `VITE_PIXABAY_KEY` | Pixabay API key (furniture image search) |
+| `VITE_SENTRY_DSN` | Sentry DSN (optional — error tracking) |
 
-- **Guest access** — moodboard is fully usable without signing in; shopping list is local-only for guests and merges on sign-in
-- **Furniture catalog** — 80 mock items in `src/lib/furnitureFixtures.js`; no `furniture_items` table required for the demo
-- **Canvas controls** — drag, resize (bottom-right handle), and rotate (bottom-left ↻ handle) each placed item; all values persist with room saves
-- **Shopping list** — add canvas items to list, adjust quantity, remove, see running total; works for guests (local) and logged-in users (Supabase)
-- **Saving** — requires sign-in; guests see an inline auth prompt
+## Notes
 
-## User preferences
+- `onnxruntime-web` is excluded from both the Vite dev optimizer and Rollup build — it is loaded dynamically by `@imgly/background-removal` at runtime in the browser.
+- `.npmrc` sets `legacy-peer-deps=true` to resolve an ESLint peer dependency conflict. This is also picked up by Vercel on deployment.
+- Supabase schema is documented in `DOCUMENTATION.md` § 8.
 
-- Keep the existing project structure; do not restructure or migrate the stack.
-- Vite must stay at v5.x — Vite 6+ uses a Rust-based Rolldown binary that crashes on this NixOS environment (stable-25_05).
+## User Preferences
+
+_None recorded yet._

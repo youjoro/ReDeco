@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
+import { nanoid } from "nanoid";
 import rateLimiter from "./lib/rateLimiter";
-import { loadImageSize, removeImageBackground } from "./lib/imageUtils";
+import { loadImageSize } from "./lib/imageUtils";
 import { snap } from "./lib/snapGrid";
 
 const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_KEY;
 const PIXABAY_BASE = "https://pixabay.com/api/";
+
+// removed local rateLimiter & loadImageSize duplicate; using shared utilities
 
 // ── Design tokens ─────────────────────────────────────────────────────────
 const C = {
@@ -25,7 +28,7 @@ const C = {
   danger:      "#c0392b",
 };
 
-// ── Furniture item on canvas ───────────────────────────────────────────────
+// ── Furniture item on canvas ──────────────────────────────────────────────────
 function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect, gridSize }) {
   const dragOffset = useRef(null);
   const resizeStart = useRef(null);
@@ -102,7 +105,7 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
   );
 }
 
-// ── Grid slider ────────────────────────────────────────────────────────────
+// ── Grid slider ─────────────────────────────────────────────────────────
 function GridSlider({ value, onChange }) {
   const ref = useRef(null);
   const MAX = 80;
@@ -144,7 +147,7 @@ function GridSlider({ value, onChange }) {
   );
 }
 
-// ── Sidebar panel ──────────────────────────────────────────────────────────
+// ── Sidebar panel ─────────────────────────────────────────────────────────
 function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) {
   const [tab, setTab] = useState("search");
   const [query, setQuery] = useState("");
@@ -176,10 +179,11 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
   const handleAdd = async (src, label) => {
     setAdding(src);
     try {
-      // Use local package via helper — faster and consistent with imageUtils
-      const cleanedUrl = await removeImageBackground(src); // returns blob: URL
-      const size = await loadImageSize(cleanedUrl);
-      onAddItem(cleanedUrl, size, label);
+      const { removeBackground } = await import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm");
+      const blob = await removeBackground(src);
+      const url = URL.createObjectURL(blob);
+      const size = await loadImageSize(url);
+      onAddItem(url, size, label);
     } catch {
       const size = await loadImageSize(src);
       onAddItem(src, size, label);
@@ -236,9 +240,177 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
         ))}
       </div>
 
-      {/* ... (rest of Sidebar unchanged — omitted here for brevity in this excerpt) ... */}
+      {/* Search tab */}
+      {tab === "search" && (
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", padding: "12px" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexShrink: 0 }}>
+            <input
+              type="text" placeholder="sofa, chair, lamp..."
+              value={query} onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && search()}
+              style={{
+                flex: 1, padding: "8px 10px", borderRadius: 8,
+                border: `1.5px solid ${C.border}`, fontSize: 12,
+                background: C.inputBg, color: C.text, outline: "none",
+              }}
+              onFocus={(e) => e.target.style.borderColor = C.accent}
+              onBlur={(e) => e.target.style.borderColor = C.border}
+            />
+            <button onClick={() => search()} disabled={loading} style={{
+              padding: "8px 10px", borderRadius: 8, border: "none",
+              background: loading ? C.textFaint : C.accent,
+              color: "#fff", cursor: loading ? "default" : "pointer",
+              fontSize: 13, fontWeight: 700, flexShrink: 0,
+            }}>{loading ? "…" : "↵"}</button>
+          </div>
 
-      {/* For clarity: the rest of the JSX remains the same as before */}
+          {error && <div style={{ fontSize: 11, color: C.danger, marginBottom: 8, flexShrink: 0 }}>{error}</div>}
+
+          {adding && (
+            <div style={{
+              fontSize: 11, color: C.accent, marginBottom: 8, flexShrink: 0,
+              background: C.accentLight, borderRadius: 6, padding: "6px 10px",
+              display: "flex", alignItems: "center", gap: 6,
+            }}>
+              <span>✂️</span> Removing background...
+            </div>
+          )}
+
+          {/* Results grid — scrollable */}
+          <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+            {loading && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 10, color: C.textFaint }}>
+                <div style={{ fontSize: 28 }}>🔍</div>
+                <div style={{ fontSize: 12 }}>Searching...</div>
+              </div>
+            )}
+
+            {!loading && results.length === 0 && !query && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8, color: C.textFaint }}>
+                <div style={{ fontSize: 32 }}>🪴</div>
+                <div style={{ fontSize: 12, textAlign: "center" }}>Search for furniture to add to your room</div>
+              </div>
+            )}
+
+            {!loading && results.length === 0 && query && !error && (
+              <div style={{ textAlign: "center", color: C.textFaint, fontSize: 12, paddingTop: 40 }}>No results for "{query}"</div>
+            )}
+
+            {!loading && results.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                {results.map((img) => (
+                  <div
+                    key={img.id}
+                    onClick={() => !adding && handleAdd(img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
+                    style={{
+                      borderRadius: 8, overflow: "hidden", cursor: adding ? "wait" : "pointer",
+                      border: `1.5px solid ${C.border}`, aspectRatio: "1",
+                      background: C.bg, position: "relative",
+                      transition: "border 0.12s, transform 0.12s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.border = `1.5px solid ${C.accent}`; e.currentTarget.style.transform = "scale(1.03)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.border = `1.5px solid ${C.border}`; e.currentTarget.style.transform = "scale(1)"; }}
+                  >
+                    <img src={img.previewURL} alt={img.tags} loading="lazy"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      onError={(e) => { e.target.src = "https://placehold.co/120x120/fdf0e6/c4a882?text=?"; }}
+                    />
+                    {adding === img.webformatURL && (
+                      <div style={{
+                        position: "absolute", inset: 0, background: "rgba(255,255,255,0.8)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 20,
+                      }}>✂️</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pagination */}
+          {results.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, flexShrink: 0 }}>
+              <button
+                onClick={() => search(query, page - 1)} disabled={page <= 1 || loading}
+                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page <= 1 ? C.textFaint : C.text, cursor: page <= 1 ? "default" : "poin[...]
+              >← Prev</button>
+              <span style={{ fontSize: 11, color: C.textFaint }}>{page} / {totalPages}</span>
+              <button
+                onClick={() => search(query, page + 1)} disabled={page >= totalPages || loading}
+                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page >= totalPages ? C.textFaint : C.text, cursor: page >= totalPages ?[...]
+              >Next →</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upload tab */}
+      {tab === "upload" && (
+        <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.textSub, marginBottom: 2 }}>Add Furniture</div>
+          <div
+            onClick={() => fileRef.current.click()}
+            style={{
+              border: `2px dashed ${C.border}`, borderRadius: 10,
+              padding: "28px 16px", textAlign: "center", cursor: "pointer",
+              background: C.accentLight, transition: "border 0.15s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = C.accent}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = C.border}
+          >
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🪴</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 3 }}>Upload image</div>
+            <div style={{ fontSize: 11, color: C.textSub }}>Background removed automatically</div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFileUpload} style={{ display: "none" }} />
+
+          {adding && (
+            <div style={{ fontSize: 11, color: C.accent, background: C.accentLight, borderRadius: 6, padding: "8px 10px", display: "flex", gap: 6, alignItems: "center" }}>
+              <span>✂️</span> Removing background...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Room tab */}
+      {tab === "room" && (
+        <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.textSub }}>Room Background</div>
+
+          {background ? (
+            <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1.5px solid ${C.border}` }}>
+              <img src={background} alt="room" style={{ width: "100%", height: 130, objectFit: "cover", display: "block" }} />
+              <button onClick={onClearBackground} style={{
+                position: "absolute", top: 6, right: 6,
+                background: "rgba(0,0,0,0.55)", color: "#fff", border: "none",
+                borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontSize: 11, fontWeight: 600,
+              }}>✕ Clear</button>
+            </div>
+          ) : (
+            <div style={{
+              border: `2px dashed ${C.border}`, borderRadius: 10,
+              height: 110, display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", gap: 6,
+              background: C.accentLight, color: C.textFaint,
+            }}>
+              <div style={{ fontSize: 28 }}>🏠</div>
+              <div style={{ fontSize: 11 }}>No room set</div>
+            </div>
+          )}
+
+          <button onClick={() => bgFileRef.current.click()} style={{
+            padding: "9px 0", borderRadius: 9, border: "none", cursor: "pointer",
+            background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
+            color: "#fff", fontWeight: 700, fontSize: 13,
+            boxShadow: "0 2px 8px rgba(160,90,44,0.25)",
+          }}>📁 Upload Room Photo</button>
+          <input ref={bgFileRef} type="file" accept="image/*" onChange={handleBgFile} style={{ display: "none" }} />
+
+          <div style={{ fontSize: 11, color: C.textFaint, textAlign: "center" }}>or paste a URL</div>
+          <UrlBgInput onSet={onSetBackground} />
+        </div>
+      )}
     </div>
   );
 }
@@ -259,7 +431,7 @@ function UrlBgInput({ onSet }) {
   );
 }
 
-// ── Main export ────────────────────────────────────────────────────────────
+// ── Main export ─────────────────────────────────────────────────────────
 export default function Moodboard({ initialBackground, initialItems, onBackgroundChange, onItemsChange }) {
   const [items, setItems] = useState(initialItems || []);
   const [selectedId, setSelectedId] = useState(null);
@@ -280,9 +452,8 @@ export default function Moodboard({ initialBackground, initialItems, onBackgroun
   const handleDelete = (id)       => { updateItems((p) => p.filter((i) => i.id !== id)); setSelectedId(null); };
 
   const handleAddItem = (src, size, label) => {
-    const id = typeof crypto !== "undefined" && crypto.randomUUID ? `local-${crypto.randomUUID()}` : `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     updateItems((prev) => [...prev, {
-      id, src, label,
+      id: `local-${nanoid()}`, src, label,
       x: snap(80 + Math.random() * 200, gridSize || 1),
       y: snap(60 + Math.random() * 120, gridSize || 1),
       width: size.width, height: size.height,

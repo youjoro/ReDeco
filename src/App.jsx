@@ -11,8 +11,8 @@ import { ShoppingListProvider, useShoppingList } from "./context/ShoppingListCon
 import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./lib/supabase";
 import { snap } from "./lib/snapGrid";
 import "./App.css";
+import { nanoid } from 'nanoid';
 
-let nextId = 1;
 
 // ── Auto logout config ────────────────────────────────────────────────────────
 const INACTIVE_LIMIT_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -120,7 +120,7 @@ export default function App() {
     setItems((prev) => {
       const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;
       return [...prev, {
-        id: nextId++, src, label,
+        id: local-${nanoid()}, src, label,
         x: snap(80 + Math.random() * 200, 0),
         y: snap(60 + Math.random() * 120, 0),
         width: size.width, height: size.height,

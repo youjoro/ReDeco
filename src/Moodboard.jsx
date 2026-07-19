@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import { useWindowDrag } from "./hooks/useWindowDrag";
 import { nanoid } from "nanoid";
 import rateLimiter from "./lib/rateLimiter";
 import { loadImageSize } from "./lib/imageUtils";
@@ -34,45 +35,26 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
   const resizeStart = useRef(null);
   const [hovered, setHovered] = useState(false);
 
-  // ── Tracked listener helpers — prevents leaks when component unmounts mid-drag
-  const activeListeners = useRef([]);
-  const track = (ev, fn, opts) => {
-    window.addEventListener(ev, fn, opts);
-    activeListeners.current.push([ev, fn]);
-  };
-  const untrack = (ev, fn) => {
-    window.removeEventListener(ev, fn);
-    activeListeners.current = activeListeners.current.filter(([e, f]) => !(e === ev && f === fn));
-  };
-  useEffect(() => () => {
-    activeListeners.current.forEach(([ev, fn]) => window.removeEventListener(ev, fn));
-    activeListeners.current = [];
-  }, []);
+  const { startMouse } = useWindowDrag();
 
   const startDrag = (e) => {
     if (e.target.dataset.handle || e.target.dataset.del) return;
     e.preventDefault(); e.stopPropagation();
     onSelect(item.id);
     dragOffset.current = { x: e.clientX - item.x, y: e.clientY - item.y };
-    const move = (e) => onDrag(item.id, {
+    startMouse((e) => onDrag(item.id, {
       x: snap(e.clientX - dragOffset.current.x, gridSize),
       y: snap(e.clientY - dragOffset.current.y, gridSize),
-    });
-    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
-    track("mousemove", move);
-    track("mouseup", up);
+    }));
   };
 
   const startResize = (e) => {
     e.stopPropagation(); e.preventDefault();
     resizeStart.current = { mx: e.clientX, my: e.clientY, w: item.width, h: item.height, r: item.width / item.height };
-    const move = (e) => {
+    startMouse((e) => {
       const w = Math.max(60, snap(resizeStart.current.w + (e.clientX - resizeStart.current.mx), gridSize));
       onResize(item.id, { width: w, height: Math.round(w / resizeStart.current.r) });
-    };
-    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
-    track("mousemove", move);
-    track("mouseup", up);
+    });
   };
 
   const show = isSelected || hovered;
@@ -126,19 +108,12 @@ function GridSlider({ value, onChange }) {
   const MAX = 80;
   const pct = (value / MAX) * 100;
 
-  // ── Tracked listener helpers — prevents leaks when component unmounts mid-drag
-  const activeListeners = useRef([]);
-  const track = (ev, fn) => { window.addEventListener(ev, fn); activeListeners.current.push([ev, fn]); };
-  const untrack = (ev, fn) => { window.removeEventListener(ev, fn); activeListeners.current = activeListeners.current.filter(([e, f]) => !(e === ev && f === fn)); };
-  useEffect(() => () => { activeListeners.current.forEach(([ev, fn]) => window.removeEventListener(ev, fn)); activeListeners.current = []; }, []);
+  const { startMouse } = useWindowDrag();
 
   const startDrag = (e) => {
     e.preventDefault();
     update(e);
-    const move = (e) => update(e);
-    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
-    track("mousemove", move);
-    track("mouseup", up);
+    startMouse((e) => update(e));
   };
 
   const update = (e) => {

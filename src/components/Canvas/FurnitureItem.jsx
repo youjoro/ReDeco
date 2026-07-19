@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { snap } from "../../lib/snapGrid";
+import { useWindowDrag } from "../../hooks/useWindowDrag";
 import "./FurnitureItem.css";
 
 export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDelete, onAddToList, isSelected, onSelect, gridSize }) {
@@ -7,21 +8,7 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
   const resizeStart = useRef(null);
   const elRef       = useRef(null);
   const [hovered, setHovered] = useState(false);
-
-  // ── Tracked listener helpers — prevents leaks when component unmounts mid-drag
-  const activeListeners = useRef([]);
-  const track = (ev, fn, opts) => {
-    window.addEventListener(ev, fn, opts);
-    activeListeners.current.push([ev, fn]);
-  };
-  const untrack = (ev, fn) => {
-    window.removeEventListener(ev, fn);
-    activeListeners.current = activeListeners.current.filter(([e, f]) => !(e === ev && f === fn));
-  };
-  useEffect(() => () => {
-    activeListeners.current.forEach(([ev, fn]) => window.removeEventListener(ev, fn));
-    activeListeners.current = [];
-  }, []);
+  const { startMouse, startTouch } = useWindowDrag();
 
   // ── Shared move/end logic ──────────────────────────────────────────────────
   const applyDrag = (clientX, clientY) => {
@@ -44,16 +31,15 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     return ((deg % 360) + 360) % 360;
   };
 
+  const normDelta = (d) => { while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
+
   // ── Mouse drag ─────────────────────────────────────────────────────────────
   const startMouseDrag = (e) => {
     if (e.target.dataset.handle || e.target.dataset.del || e.target.dataset.cart || e.target.dataset.rotate) return;
     e.preventDefault(); e.stopPropagation();
     onSelect(item.id);
     dragOffset.current = { x: e.clientX - item.x, y: e.clientY - item.y };
-    const move = (e) => applyDrag(e.clientX, e.clientY);
-    const up   = () => { untrack("mousemove", move); untrack("mouseup", up); };
-    track("mousemove", move);
-    track("mouseup", up);
+    startMouse((e) => applyDrag(e.clientX, e.clientY));
   };
 
   // ── Touch drag ─────────────────────────────────────────────────────────────
@@ -63,20 +49,14 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     onSelect(item.id);
     const t = e.touches[0];
     dragOffset.current = { x: t.clientX - item.x, y: t.clientY - item.y };
-    const move = (e) => { const t = e.touches[0]; applyDrag(t.clientX, t.clientY); };
-    const end  = () => { untrack("touchmove", move); untrack("touchend", end); };
-    track("touchmove", move, { passive: true });
-    track("touchend", end);
+    startTouch((e) => { const t = e.touches[0]; applyDrag(t.clientX, t.clientY); }, undefined, true);
   };
 
   // ── Mouse resize ───────────────────────────────────────────────────────────
   const startMouseResize = (e) => {
     e.stopPropagation(); e.preventDefault();
     resizeStart.current = { mx: e.clientX, w: item.width, r: item.width / item.height };
-    const move = (e) => applyResize(e.clientX);
-    const up   = () => { untrack("mousemove", move); untrack("mouseup", up); };
-    track("mousemove", move);
-    track("mouseup", up);
+    startMouse((e) => applyResize(e.clientX));
   };
 
   // ── Touch resize ───────────────────────────────────────────────────────────
@@ -84,29 +64,20 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     e.stopPropagation();
     const t = e.touches[0];
     resizeStart.current = { mx: t.clientX, w: item.width, r: item.width / item.height };
-    const move = (e) => applyResize(e.touches[0].clientX);
-    const end  = () => { untrack("touchmove", move); untrack("touchend", end); };
-    track("touchmove", move, { passive: true });
-    track("touchend", end);
+    startTouch((e) => applyResize(e.touches[0].clientX), undefined, true);
   };
-
-  // ── Rotate helpers ─────────────────────────────────────────────────────────
-  const normDelta = (d) => { while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
 
   // ── Mouse rotate ───────────────────────────────────────────────────────────
   const startMouseRotate = (e) => {
     e.stopPropagation(); e.preventDefault();
     let prev = getRotationAngle(e.clientX, e.clientY);
     let rot  = item.rotation || 0;
-    const move = (e) => {
+    startMouse((e) => {
       const cur = getRotationAngle(e.clientX, e.clientY);
       rot = ((rot + normDelta(cur - prev)) % 360 + 360) % 360;
       prev = cur;
       onRotate(item.id, rot);
-    };
-    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
-    track("mousemove", move);
-    track("mouseup", up);
+    });
   };
 
   // ── Touch rotate ───────────────────────────────────────────────────────────
@@ -115,16 +86,13 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     const t0 = e.touches[0];
     let prev = getRotationAngle(t0.clientX, t0.clientY);
     let rot  = item.rotation || 0;
-    const move = (e) => {
+    startTouch((e) => {
       const t   = e.touches[0];
       const cur = getRotationAngle(t.clientX, t.clientY);
       rot = ((rot + normDelta(cur - prev)) % 360 + 360) % 360;
       prev = cur;
       onRotate(item.id, rot);
-    };
-    const end = () => { untrack("touchmove", move); untrack("touchend", end); };
-    track("touchmove", move, { passive: true });
-    track("touchend", end);
+    }, undefined, true);
   };
 
   const showControls = isSelected || hovered;

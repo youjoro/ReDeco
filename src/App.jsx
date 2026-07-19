@@ -120,7 +120,7 @@ export default function App() {
     setItems((prev) => {
       const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;
       return [...prev, {
-        id: local-${nanoid()}, src, label,
+        id: `local-${nanoid()}`, src, label,
         x: snap(80 + Math.random() * 200, 0),
         y: snap(60 + Math.random() * 120, 0),
         width: size.width, height: size.height,

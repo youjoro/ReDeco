@@ -25,4 +25,9 @@ jobs:
   # Deploy job is gated on the build-and-test job so it will not run if any earlier
   # steps or jobs fail. It also only runs on push events (not pull requests).
   deploy:
-    needs: [build](#)
+    needs: [build-and-test]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment placeholder
+        run: echo "Deploy would run here. This job only runs if build-and-test succeeded."

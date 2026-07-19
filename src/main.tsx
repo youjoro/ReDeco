@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import type { Root } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import { ThemeProvider } from './context/ThemeContext'
 import './index.css'
@@ -13,7 +14,7 @@ Sentry.init({
   environment: import.meta.env.MODE,
 })
 
-function ErrorFallback({ error, resetError }: { error: Error; resetError: () => void }) {
+export function ErrorFallback({ error, resetError }: { error: Error; resetError: () => void }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -55,8 +56,9 @@ function ErrorFallback({ error, resetError }: { error: Error; resetError: () => 
 
 // Guard against Vite HMR re-running this module and calling createRoot twice
 const container = document.getElementById('root')!
-const root = (container as any).__reactRoot ?? createRoot(container)
-(container as any).__reactRoot = root
+const rootContainer = container as unknown as { __reactRoot?: Root }
+const root = rootContainer.__reactRoot ?? createRoot(container)
+rootContainer.__reactRoot = root
 
 root.render(
   <StrictMode>

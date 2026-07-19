@@ -10,11 +10,12 @@ import PaywallModal       from "./components/Paywall/PaywallModal";
 import { ShoppingListProvider, useShoppingList } from "./context/ShoppingListContext";
 import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./lib/supabase";
 import { snap } from "./lib/snapGrid";
+import { nanoid } from "nanoid";
 import "./App.css";
 
-let nextId = 1;
+// replace module-level counter nextId with nanoid-based local ids
 
-// ── Auto logout config ────────────────────────────────────────────────────────
+// ── Auto logout config ───────────────────────────────────────────────────────
 const INACTIVE_LIMIT_MS = 2 * 60 * 60 * 1000; // 2 hours
 const WARN_BEFORE_MS    = 2 * 60 * 1000;       // warn 2 mins before logout
 const ACTIVITY_EVENTS   = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"];
@@ -120,7 +121,7 @@ export default function App() {
     setItems((prev) => {
       const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;
       return [...prev, {
-        id: nextId++, src, label,
+        id: `local-${nanoid()}`, src, label,
         x: snap(80 + Math.random() * 200, 0),
         y: snap(60 + Math.random() * 120, 0),
         width: size.width, height: size.height,
@@ -259,106 +260,5 @@ export default function App() {
         </ShoppingListProvider>
       )}
     </>
-  );
-}
-
-// ── Inner shell — rendered inside ShoppingListProvider ───────────────────────
-function CanvasApp({
-  user, isPro, currentRoom, saving, saveMsg, background, items, sessionWarn, resetTimers,
-  showRooms, showShoppingList, showAuthPrompt,
-  setShowShoppingList, setShowRooms,
-  setBackground, setItems,
-  onSave, onRename, onAddItem, onLoadRoom, onNewRoom,
-  onNeedAuth, onCloseAuthPrompt, onGoToAuth,
-  itemPaywall, setItemPaywall,
-}) {
-  const { count, addToList } = useShoppingList();
-
-  return (
-    <div className="app">
-      <div className="canvas-enter-toolbar">
-        <Toolbar
-          user={user}
-          isPro={isPro}
-          roomName={currentRoom.name}
-          saving={saving}
-          saveMsg={saveMsg}
-          onSave={onSave}
-          onRename={onRename}
-          onOpenRooms={() => user ? setShowRooms(true) : onNeedAuth()}
-          onOpenShoppingList={() => setShowShoppingList(true)}
-          shoppingCount={count}
-          onSignIn={onNeedAuth}
-        />
-      </div>
-
-      {sessionWarn && (
-        <div className="app__session-warn">
-          <span>⏳ You'll be logged out in 2 minutes due to inactivity.</span>
-          <button onClick={resetTimers}>Stay logged in</button>
-        </div>
-      )}
-
-      <div className="app__body canvas-enter-body">
-        <div className="canvas-enter-sidebar">
-          <Sidebar
-            background={background}
-            onAddItem={onAddItem}
-            onSetBackground={setBackground}
-            onClearBackground={() => setBackground(null)}
-          />
-        </div>
-        <Canvas
-          background={background}
-          items={items}
-          onItemsChange={setItems}
-          onBackgroundChange={setBackground}
-          onAddToList={(canvasItem) => addToList(canvasItem, currentRoom.id)}
-        />
-      </div>
-
-      {showRooms && user && (
-        <RoomManager
-          isPro={isPro}
-          onClose={() => setShowRooms(false)}
-          onLoad={onLoadRoom}
-          onNew={onNewRoom}
-        />
-      )}
-
-      {showShoppingList && (
-        <ShoppingListPanel onClose={() => setShowShoppingList(false)} />
-      )}
-
-      {itemPaywall && (
-        <PaywallModal
-          type="items"
-          count={items.length}
-          onClose={() => setItemPaywall(false)}
-        />
-      )}
-
-      {/* Auth prompt for guests trying protected actions */}
-      {showAuthPrompt && (
-        <div className="app__auth-prompt-overlay" onClick={onCloseAuthPrompt}>
-          <div className="app__auth-prompt" onClick={(e) => e.stopPropagation()}>
-            <button className="app__auth-prompt-close" onClick={onCloseAuthPrompt}>×</button>
-            <span className="app__auth-prompt-icon">🔐</span>
-            <h3 className="app__auth-prompt-title">Sign in to save your work</h3>
-            <p className="app__auth-prompt-sub">
-              Your moodboard is safe while you browse. Create a free account to save rooms and access them anywhere.
-            </p>
-            <div className="app__auth-prompt-actions">
-              <button className="app__auth-prompt-primary" onClick={() => onGoToAuth("signup")}>
-                Create free account
-              </button>
-              <button className="app__auth-prompt-ghost" onClick={() => onGoToAuth("login")}>
-                I have an account
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

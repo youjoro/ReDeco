@@ -34,6 +34,21 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
   const resizeStart = useRef(null);
   const [hovered, setHovered] = useState(false);
 
+  // ── Tracked listener helpers — prevents leaks when component unmounts mid-drag
+  const activeListeners = useRef([]);
+  const track = (ev, fn, opts) => {
+    window.addEventListener(ev, fn, opts);
+    activeListeners.current.push([ev, fn]);
+  };
+  const untrack = (ev, fn) => {
+    window.removeEventListener(ev, fn);
+    activeListeners.current = activeListeners.current.filter(([e, f]) => !(e === ev && f === fn));
+  };
+  useEffect(() => () => {
+    activeListeners.current.forEach(([ev, fn]) => window.removeEventListener(ev, fn));
+    activeListeners.current = [];
+  }, []);
+
   const startDrag = (e) => {
     if (e.target.dataset.handle || e.target.dataset.del) return;
     e.preventDefault(); e.stopPropagation();
@@ -43,9 +58,9 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
       x: snap(e.clientX - dragOffset.current.x, gridSize),
       y: snap(e.clientY - dragOffset.current.y, gridSize),
     });
-    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
+    track("mousemove", move);
+    track("mouseup", up);
   };
 
   const startResize = (e) => {
@@ -55,9 +70,9 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
       const w = Math.max(60, snap(resizeStart.current.w + (e.clientX - resizeStart.current.mx), gridSize));
       onResize(item.id, { width: w, height: Math.round(w / resizeStart.current.r) });
     };
-    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
+    track("mousemove", move);
+    track("mouseup", up);
   };
 
   const show = isSelected || hovered;
@@ -111,13 +126,19 @@ function GridSlider({ value, onChange }) {
   const MAX = 80;
   const pct = (value / MAX) * 100;
 
+  // ── Tracked listener helpers — prevents leaks when component unmounts mid-drag
+  const activeListeners = useRef([]);
+  const track = (ev, fn) => { window.addEventListener(ev, fn); activeListeners.current.push([ev, fn]); };
+  const untrack = (ev, fn) => { window.removeEventListener(ev, fn); activeListeners.current = activeListeners.current.filter(([e, f]) => !(e === ev && f === fn)); };
+  useEffect(() => () => { activeListeners.current.forEach(([ev, fn]) => window.removeEventListener(ev, fn)); activeListeners.current = []; }, []);
+
   const startDrag = (e) => {
     e.preventDefault();
     update(e);
     const move = (e) => update(e);
-    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
+    track("mousemove", move);
+    track("mouseup", up);
   };
 
   const update = (e) => {

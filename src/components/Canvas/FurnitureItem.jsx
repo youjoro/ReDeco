@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { snap } from "../../lib/snapGrid";
 import "./FurnitureItem.css";
 
@@ -7,6 +7,21 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
   const resizeStart = useRef(null);
   const elRef       = useRef(null);
   const [hovered, setHovered] = useState(false);
+
+  // ── Tracked listener helpers — prevents leaks when component unmounts mid-drag
+  const activeListeners = useRef([]);
+  const track = (ev, fn, opts) => {
+    window.addEventListener(ev, fn, opts);
+    activeListeners.current.push([ev, fn]);
+  };
+  const untrack = (ev, fn) => {
+    window.removeEventListener(ev, fn);
+    activeListeners.current = activeListeners.current.filter(([e, f]) => !(e === ev && f === fn));
+  };
+  useEffect(() => () => {
+    activeListeners.current.forEach(([ev, fn]) => window.removeEventListener(ev, fn));
+    activeListeners.current = [];
+  }, []);
 
   // ── Shared move/end logic ──────────────────────────────────────────────────
   const applyDrag = (clientX, clientY) => {
@@ -26,7 +41,7 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     const cx = rect.left + rect.width  / 2;
     const cy = rect.top  + rect.height / 2;
     const deg = Math.round(Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI) + 90;
-    return ((deg % 360) + 360) % 360; // normalise to 0-359
+    return ((deg % 360) + 360) % 360;
   };
 
   // ── Mouse drag ─────────────────────────────────────────────────────────────
@@ -36,9 +51,9 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     onSelect(item.id);
     dragOffset.current = { x: e.clientX - item.x, y: e.clientY - item.y };
     const move = (e) => applyDrag(e.clientX, e.clientY);
-    const up   = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up   = () => { untrack("mousemove", move); untrack("mouseup", up); };
+    track("mousemove", move);
+    track("mouseup", up);
   };
 
   // ── Touch drag ─────────────────────────────────────────────────────────────
@@ -49,9 +64,9 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     const t = e.touches[0];
     dragOffset.current = { x: t.clientX - item.x, y: t.clientY - item.y };
     const move = (e) => { const t = e.touches[0]; applyDrag(t.clientX, t.clientY); };
-    const end  = () => { window.removeEventListener("touchmove", move); window.removeEventListener("touchend", end); };
-    window.addEventListener("touchmove", move, { passive: true });
-    window.addEventListener("touchend", end);
+    const end  = () => { untrack("touchmove", move); untrack("touchend", end); };
+    track("touchmove", move, { passive: true });
+    track("touchend", end);
   };
 
   // ── Mouse resize ───────────────────────────────────────────────────────────
@@ -59,9 +74,9 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     e.stopPropagation(); e.preventDefault();
     resizeStart.current = { mx: e.clientX, w: item.width, r: item.width / item.height };
     const move = (e) => applyResize(e.clientX);
-    const up   = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up   = () => { untrack("mousemove", move); untrack("mouseup", up); };
+    track("mousemove", move);
+    track("mouseup", up);
   };
 
   // ── Touch resize ───────────────────────────────────────────────────────────
@@ -70,13 +85,12 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     const t = e.touches[0];
     resizeStart.current = { mx: t.clientX, w: item.width, r: item.width / item.height };
     const move = (e) => applyResize(e.touches[0].clientX);
-    const end  = () => { window.removeEventListener("touchmove", move); window.removeEventListener("touchend", end); };
-    window.addEventListener("touchmove", move, { passive: true });
-    window.addEventListener("touchend", end);
+    const end  = () => { untrack("touchmove", move); untrack("touchend", end); };
+    track("touchmove", move, { passive: true });
+    track("touchend", end);
   };
 
   // ── Rotate helpers ─────────────────────────────────────────────────────────
-  // Normalise an angle delta to [-180, 180] so crossing 0°/360° never jumps.
   const normDelta = (d) => { while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
 
   // ── Mouse rotate ───────────────────────────────────────────────────────────
@@ -90,9 +104,9 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
       prev = cur;
       onRotate(item.id, rot);
     };
-    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up = () => { untrack("mousemove", move); untrack("mouseup", up); };
+    track("mousemove", move);
+    track("mouseup", up);
   };
 
   // ── Touch rotate ───────────────────────────────────────────────────────────
@@ -108,9 +122,9 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
       prev = cur;
       onRotate(item.id, rot);
     };
-    const end = () => { window.removeEventListener("touchmove", move); window.removeEventListener("touchend", end); };
-    window.addEventListener("touchmove", move, { passive: true });
-    window.addEventListener("touchend", end);
+    const end = () => { untrack("touchmove", move); untrack("touchend", end); };
+    track("touchmove", move, { passive: true });
+    track("touchend", end);
   };
 
   const showControls = isSelected || hovered;
@@ -130,8 +144,6 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
         left: item.x, top: item.y,
         width: item.width, height: item.height,
         transform: `rotate(${rotation}deg)`,
-        // Selected item floats above everything for handle visibility;
-        // otherwise the stored zOrder drives stacking (1-based, 0 = back).
         zIndex: isSelected ? 1000 : (item.zOrder ?? 0) + 1,
       }}
       onMouseDown={startMouseDrag}
@@ -160,7 +172,6 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
             >🛒</button>
           )}
 
-          {/* Resize handle — bottom-right */}
           <div
             className="furniture__resize"
             data-handle
@@ -169,7 +180,6 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
             title="Resize"
           />
 
-          {/* Rotate handle — bottom-left */}
           <div
             className="furniture__rotate"
             data-rotate

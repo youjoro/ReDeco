@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import "./GridSlider.css";
 
 const MAX = 80;
@@ -7,13 +7,19 @@ export default function GridSlider({ value, onChange }) {
   const trackRef = useRef(null);
   const pct = (value / MAX) * 100;
 
+  // ── Tracked listener helpers — prevents leaks when component unmounts mid-drag
+  const activeListeners = useRef([]);
+  const track = (ev, fn) => { window.addEventListener(ev, fn); activeListeners.current.push([ev, fn]); };
+  const untrack = (ev, fn) => { window.removeEventListener(ev, fn); activeListeners.current = activeListeners.current.filter(([e, f]) => !(e === ev && f === fn)); };
+  useEffect(() => () => { activeListeners.current.forEach(([ev, fn]) => window.removeEventListener(ev, fn)); activeListeners.current = []; }, []);
+
   const startDrag = (e) => {
     e.preventDefault();
     update(e);
     const move = (e) => update(e);
-    const up   = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    const up   = () => { untrack("mousemove", move); untrack("mouseup", up); };
+    track("mousemove", move);
+    track("mouseup", up);
   };
 
   const update = (e) => {

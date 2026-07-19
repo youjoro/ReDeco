@@ -54,9 +54,9 @@ function ErrorFallback({ error, resetError }: { error: Error; resetError: () => 
 }
 
 // Guard against Vite HMR re-running this module and calling createRoot twice
-const container = document.getElementById('root')!;
-const root = (container as any).__reactRoot ?? createRoot(container);
-(container as any).__reactRoot = root;
+const container = document.getElementById('root')!
+const root = (container as any).__reactRoot ?? createRoot(container)
+(container as any).__reactRoot = root
 
 root.render(
   <StrictMode>

@@ -1,35 +1,15 @@
 import { useState, useRef, useEffect } from "react";
+import { nanoid } from "nanoid";
+import rateLimiter from "./lib/rateLimiter";
+import { loadImageSize } from "./lib/imageUtils";
+import { snap } from "./lib/snapGrid";
 
 const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_KEY;
 const PIXABAY_BASE = "https://pixabay.com/api/";
 
-const rateLimiter = {
-  requests: [],
-  canRequest() {
-    const now = Date.now();
-    this.requests = this.requests.filter((t) => now - t < 60000);
-    if (this.requests.length >= 80) return false;
-    this.requests.push(now);
-    return true;
-  },
-};
+// removed local rateLimiter & loadImageSize duplicate; using shared utilities
 
-let nextId = 1;
-function snap(val, grid) { return grid ? Math.round(val / grid) * grid : val; }
-function loadImageSize(src, maxW = 200) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const scale = Math.min(1, maxW / img.naturalWidth);
-      resolve({ width: Math.round(img.naturalWidth * scale), height: Math.round(img.naturalHeight * scale) });
-    };
-    img.onerror = () => resolve({ width: 200, height: 150 });
-    img.src = src;
-  });
-}
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────
 const C = {
   bg:          "#faf7f4",
   sidebar:     "#ffffff",
@@ -125,7 +105,7 @@ function FurnitureItem({ item, onDrag, onResize, onDelete, isSelected, onSelect,
   );
 }
 
-// ── Grid slider ───────────────────────────────────────────────────────────────
+// ── Grid slider ─────────────────────────────────────────────────────────
 function GridSlider({ value, onChange }) {
   const ref = useRef(null);
   const MAX = 80;
@@ -167,7 +147,7 @@ function GridSlider({ value, onChange }) {
   );
 }
 
-// ── Sidebar panel ─────────────────────────────────────────────────────────────
+// ── Sidebar panel ─────────────────────────────────────────────────────────
 function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) {
   const [tab, setTab] = useState("search");
   const [query, setQuery] = useState("");
@@ -353,12 +333,12 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, flexShrink: 0 }}>
               <button
                 onClick={() => search(query, page - 1)} disabled={page <= 1 || loading}
-                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page <= 1 ? C.textFaint : C.text, cursor: page <= 1 ? "default" : "pointer", fontSize: 11 }}
+                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page <= 1 ? C.textFaint : C.text, cursor: page <= 1 ? "default" : "poin[...]
               >← Prev</button>
               <span style={{ fontSize: 11, color: C.textFaint }}>{page} / {totalPages}</span>
               <button
                 onClick={() => search(query, page + 1)} disabled={page >= totalPages || loading}
-                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page >= totalPages ? C.textFaint : C.text, cursor: page >= totalPages ? "default" : "pointer", fontSize: 11 }}
+                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page >= totalPages ? C.textFaint : C.text, cursor: page >= totalPages ?[...]
               >Next →</button>
             </div>
           )}
@@ -451,7 +431,7 @@ function UrlBgInput({ onSet }) {
   );
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
+// ── Main export ─────────────────────────────────────────────────────────
 export default function Moodboard({ initialBackground, initialItems, onBackgroundChange, onItemsChange }) {
   const [items, setItems] = useState(initialItems || []);
   const [selectedId, setSelectedId] = useState(null);
@@ -473,7 +453,7 @@ export default function Moodboard({ initialBackground, initialItems, onBackgroun
 
   const handleAddItem = (src, size, label) => {
     updateItems((prev) => [...prev, {
-      id: nextId++, src, label,
+      id: `local-${nanoid()}`, src, label,
       x: snap(80 + Math.random() * 200, gridSize || 1),
       y: snap(60 + Math.random() * 120, gridSize || 1),
       width: size.width, height: size.height,

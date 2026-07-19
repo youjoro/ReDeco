@@ -125,7 +125,7 @@ export async function loadFurnitureCatalog() {
   return data;
 }
 
-// ─── Shopping List ─────────────────────────────────────────────────────────────
+// ─── Shopping List ───────────────────────────────────────────────────────────
 
 // One list per user for v1 — creates it on first use, otherwise returns the existing one
 export async function getOrCreateShoppingList() {
@@ -152,94 +152,4 @@ export async function getOrCreateShoppingList() {
   return created;
 }
 
-// Items joined with their catalog row so price/retailer/image come back in one call
-export async function loadShoppingListItems(shoppingListId) {
-  const { data, error } = await supabase
-    .from("shopping_list_items")
-    .select("*, furniture_items(*)")
-    .eq("shopping_list_id", shoppingListId)
-    .order("created_at", { ascending: true });
-
-  if (error) throw error;
-  return data;
-}
-
-export async function addShoppingListItem({ shoppingListId, furnitureItemId, quantity = 1, addedFromMoodboardId = null }) {
-  const { data, error } = await supabase
-    .from("shopping_list_items")
-    .insert({
-      shopping_list_id: shoppingListId,
-      furniture_item_id: furnitureItemId,
-      quantity,
-      added_from_moodboard_id: addedFromMoodboardId,
-    })
-    .select("*, furniture_items(*)")
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function updateShoppingListItemQuantity(itemId, quantity) {
-  const { data, error } = await supabase
-    .from("shopping_list_items")
-    .update({ quantity })
-    .eq("id", itemId)
-    .select("*, furniture_items(*)")
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function removeShoppingListItem(itemId) {
-  const { error } = await supabase
-    .from("shopping_list_items")
-    .delete()
-    .eq("id", itemId);
-
-  if (error) throw error;
-}
-
-export async function uploadImage(file, folder = "furniture") {
-  const user = await getUser();
-  if (!user) throw new Error("Not logged in");
-
-  const ext = file.name?.split(".").pop() || "png";
-  const path = `${user.id}/${folder}/${Date.now()}.${ext}`;
-
-  const { error } = await supabase.storage
-    .from("room-images")
-    .upload(path, file, { upsert: true });
-
-  if (error) throw error;
-
-  const { data } = supabase.storage
-    .from("room-images")
-    .getPublicUrl(path);
-
-  return data.publicUrl;
-}
-
-export async function uploadBase64Image(base64, folder = "furniture") {
-  const user = await getUser();
-  if (!user) throw new Error("Not logged in");
-
-  // Convert base64 to blob
-  const res = await fetch(base64);
-  const blob = await res.blob();
-  const ext = blob.type.split("/")[1] || "png";
-  const path = `${user.id}/${folder}/${Date.now()}.${ext}`;
-
-  const { error } = await supabase.storage
-    .from("room-images")
-    .upload(path, blob, { upsert: true, contentType: blob.type });
-
-  if (error) throw error;
-
-  const { data } = supabase.storage
-    .from("room-images")
-    .getPublicUrl(path);
-
-  return data.publicUrl;
-}
+// ─── (file truncated in this push)

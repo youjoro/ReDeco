@@ -57,6 +57,7 @@ export function ErrorFallback({ error, resetError }: { error: Error; resetError:
 // Guard against Vite HMR re-running this module and calling createRoot twice
 const container = document.getElementById('root')!
 const rootContainer = container as unknown as { __reactRoot?: Root }
+// Use a clear typed alias and avoid inline casts in expressions that some parsers choke on
 const root = rootContainer.__reactRoot ?? createRoot(container)
 rootContainer.__reactRoot = root
 

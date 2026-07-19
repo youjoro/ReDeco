@@ -21,3 +21,8 @@ jobs:
       - run: npm run lint --if-present
       - run: npm run test --if-present
       - run: npm run build
+
+  # Deploy job is gated on the build-and-test job so it will not run if any earlier
+  # steps or jobs fail. It also only runs on push events (not pull requests).
+  deploy:
+    needs: [build](#)

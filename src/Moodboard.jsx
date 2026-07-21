@@ -329,12 +329,12 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, flexShrink: 0 }}>
               <button
                 onClick={() => search(query, page - 1)} disabled={page <= 1 || loading}
-                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page <= 1 ? C.textFaint : C.text, cursor: page <= 1 ? "default" : "poin[...]
+                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page <= 1 ? C.textFaint : C.text, cursor: page <= 1 ? "default" : "pointer" }}
               >← Prev</button>
               <span style={{ fontSize: 11, color: C.textFaint }}>{page} / {totalPages}</span>
               <button
                 onClick={() => search(query, page + 1)} disabled={page >= totalPages || loading}
-                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page >= totalPages ? C.textFaint : C.text, cursor: page >= totalPages ?[...]
+                style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "white", color: page >= totalPages ? C.textFaint : C.text, cursor: page >= totalPages ? "default" : "pointer" }}
               >Next →</button>
             </div>
           )}

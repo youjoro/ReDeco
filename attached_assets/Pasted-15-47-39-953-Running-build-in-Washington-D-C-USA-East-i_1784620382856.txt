@@ -1,0 +1,35 @@
+15:47:39.953 Running build in Washington, D.C., USA (East) – iad1
+15:47:39.957 Build machine configuration: 2 cores, 8 GB
+15:47:40.149 Cloning github.com/youjoro/ReDeco (Branch: fix/ci-type-check-and-cleanup-audit, Commit: 4f31e10)
+15:47:41.566 Cloning completed: 1.411s
+15:47:41.804 Restored build cache from previous deployment (CkPnaiQSHXbXV2kKFpt9X6jNfays)
+15:47:42.416 Running "vercel build"
+15:47:42.435 Vercel CLI 56.2.0
+15:47:43.358 Running "install" command: `npm install --legacy-peer-deps`...
+15:47:44.774 
+15:47:44.775 up to date, audited 380 packages in 1s
+15:47:44.775 
+15:47:44.775 78 packages are looking for funding
+15:47:44.776   run `npm fund` for details
+15:47:44.776 
+15:47:44.777 found 0 vulnerabilities
+15:47:45.026 
+15:47:45.027 > vite-react-typescript-starter@0.0.0 build
+15:47:45.027 > tsc -b && vite build
+15:47:45.027 
+15:47:46.551 src/Moodboard.jsx(329,13): error TS2657: JSX expressions must have one parent element.
+15:47:46.551 src/Moodboard.jsx(332,201): error TS1002: Unterminated string literal.
+15:47:46.552 src/Moodboard.jsx(333,16): error TS1127: Invalid character.
+15:47:46.552 src/Moodboard.jsx(333,24): error TS17002: Expected corresponding JSX closing tag for 'div'.
+15:47:46.553 src/Moodboard.jsx(337,200): error TS1109: Expression expected.
+15:47:46.553 src/Moodboard.jsx(338,21): error TS1005: ')' expected.
+15:47:46.554 src/Moodboard.jsx(338,21): error TS1127: Invalid character.
+15:47:46.554 src/Moodboard.jsx(338,24): error TS17002: Expected corresponding JSX closing tag for 'div'.
+15:47:46.555 src/Moodboard.jsx(339,13): error TS1005: ')' expected.
+15:47:46.555 src/Moodboard.jsx(341,9): error TS1128: Declaration or statement expected.
+15:47:46.557 src/Moodboard.jsx(342,7): error TS1109: Expression expected.
+15:47:46.557 src/Moodboard.jsx(342,8): error TS1128: Declaration or statement expected.
+15:47:46.557 src/Moodboard.jsx(410,5): error TS1128: Declaration or statement expected.
+15:47:46.558 src/Moodboard.jsx(411,3): error TS1109: Expression expected.
+15:47:46.558 src/Moodboard.jsx(412,1): error TS1128: Declaration or statement expected.
+15:47:47.372 Error: Command "npm run build" exited with 2

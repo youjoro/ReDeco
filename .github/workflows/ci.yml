@@ -18,8 +18,30 @@ jobs:
           cache: 'npm'
 
       - run: npm install --legacy-peer-deps
+
+      # Lint: currently reports pre-existing errors in src/main.tsx and
+      # .local/skills (Replit-managed files outside project scope).
+      # TODO: fix the two errors in src/main.tsx and tighten the ESLint
+      # include paths so skills files are not picked up.
       - run: npm run lint --if-present
+
+      # Type-check: runs tsc --noEmit against tsconfig.json.
+      # This is separate from the build step (which runs tsc -b) so that
+      # type errors surface as a distinct CI signal without requiring a
+      # full Vite bundle.
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      # Tests: no test files exist yet; vitest exits 0 with no tests.
+      # When tests are added (src/**/*.test.{ts,tsx,js,jsx}), this step
+      # will pick them up automatically. Remove --if-present once there
+      # is at least one test file so failures are never silently skipped.
       - run: npm run test --if-present
+
+      # Build: tsc -b + vite build. Currently blocked by a pre-existing
+      # parse error in src/Moodboard.jsx (legacy file, lines 329-342).
+      # Fix tracked in PR description; unblock by fixing Moodboard.jsx
+      # or excluding it from the tsconfig include list.
       - run: npm run build
 
   # Deploy job is gated on the build-and-test job so it will not run if any earlier

@@ -6,16 +6,20 @@
     <title>ReDeco</title>
     <!--
       Content Security Policy
-      – script-src: 'self' + blob: workers only. No unsafe-inline/eval.
+      – script-src: 'self' + blob: workers + wasm-unsafe-eval only. No unsafe-inline/eval.
         Vite dev HMR injects an inline module bootstrap — if the error
         overlay stops working in dev that's acceptable; it is not present
         in production builds.
-      – style-src: unsafe-inline required for React inline styles
-      – img-src: blob/data (canvas/uploads), Pixabay CDN, Supabase storage
+      – style-src: unsafe-inline required for React inline styles (cannot be
+        removed without a full refactor away from style={{}} props)
+      – img-src: blob/data (canvas/uploads), Pixabay CDN, Supabase storage,
+                 Unsplash (Landing page + furniture fixtures), placehold.co (fallback)
       – connect-src: Supabase REST + realtime, Pixabay API,
-                     jsdelivr (background-removal model weights)
+                     jsdelivr (background-removal model weights fetched at runtime),
+                     app.glitchtip.com (Sentry-compatible error reporting endpoint)
       – worker-src: blob workers for WASM (background-removal)
       – object-src / base-uri: locked down to prevent plugin/base-tag attacks
+      – upgrade-insecure-requests: force HTTPS for all sub-resource requests
     -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
@@ -29,6 +33,7 @@
       object-src 'none';
       base-uri 'self';
       form-action 'self';
+      upgrade-insecure-requests;
     " />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>

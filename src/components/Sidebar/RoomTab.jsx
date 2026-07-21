@@ -1,13 +1,24 @@
 import { useRef, useState } from "react";
+import { validateImageFile } from "../../lib/security";
 import "./RoomTab.css";
 
 export default function RoomTab({ background, onSetBackground, onClearBackground }) {
   const fileRef = useRef(null);
   const [urlVal, setUrlVal] = useState("");
+  const [fileError, setFileError] = useState("");
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setFileError("");
+
+    const check = await validateImageFile(file);
+    if (!check.ok) {
+      setFileError(check.reason);
+      e.target.value = "";
+      return;
+    }
+
     const r = new FileReader();
     r.onload = (ev) => { onSetBackground(ev.target.result); };
     r.readAsDataURL(file);
@@ -34,10 +45,11 @@ export default function RoomTab({ background, onSetBackground, onClearBackground
         </div>
       )}
 
-      <button className="room-tab__btn" onClick={() => fileRef.current.click()}>
+      <button className="room-tab__btn" onClick={() => { setFileError(""); fileRef.current.click(); }}>
         📁 Upload Room Photo
       </button>
-      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleFile} style={{ display: "none" }} />
+      {fileError && <p className="room-tab__error">{fileError}</p>}
 
       <p className="room-tab__or">or paste a URL</p>
 

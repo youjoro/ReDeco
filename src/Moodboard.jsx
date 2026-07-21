@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import rateLimiter from "./lib/rateLimiter";
 import { loadImageSize } from "./lib/imageUtils";
 import { snap } from "./lib/snapGrid";
+import { validateImageFile } from "./lib/security";
 
 const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_KEY;
 const PIXABAY_BASE = "https://pixabay.com/api/";
@@ -175,7 +176,7 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
   const handleAdd = async (src, label) => {
     setAdding(src);
     try {
-      const { removeBackground } = await import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm");
+      const { removeBackground } = await import("@imgly/background-removal");
       const blob = await removeBackground(src);
       const url = URL.createObjectURL(blob);
       const size = await loadImageSize(url);
@@ -188,6 +189,8 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
 
   const handleFileUpload = async (e) => {
     for (const file of Array.from(e.target.files)) {
+      const check = await validateImageFile(file);
+      if (!check.ok) { setError(check.reason); continue; }
       const src = await new Promise((res) => {
         const r = new FileReader();
         r.onload = (ev) => res(ev.target.result);
@@ -195,14 +198,18 @@ function Sidebar({ onAddItem, onSetBackground, background, onClearBackground }) 
       });
       await handleAdd(src, file.name.replace(/\.[^.]+$/, ""));
     }
+    e.target.value = "";
   };
 
-  const handleBgFile = (e) => {
+  const handleBgFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const check = await validateImageFile(file);
+    if (!check.ok) { setError(check.reason); e.target.value = ""; return; }
     const r = new FileReader();
     r.onload = (ev) => onSetBackground(ev.target.result);
     r.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const tabs = [

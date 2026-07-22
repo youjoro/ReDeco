@@ -9,6 +9,11 @@
   gap: 8px;
   padding-left: max(14px, env(safe-area-inset-left));
   padding-right: max(14px, env(safe-area-inset-right));
+  /* Establish a stacking context above app__body so the mobile
+     dropdown (position:absolute inside) is never obscured by the
+     canvas/sidebar even though those siblings appear later in the DOM. */
+  position: relative;
+  z-index: 10;
 }
 
 /* ── Brand ── */

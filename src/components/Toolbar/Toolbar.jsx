@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { signOut } from "../../lib/supabase";
 import FeedbackButton from "../Feedback/FeedbackButton";
 import { useTheme } from "../../context/ThemeContext";
@@ -14,25 +14,6 @@ export default function Toolbar({
   const { theme, toggle } = useTheme();
   const isGuest  = !user;
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  // Close menu when clicking/touching outside.
-  // Uses "pointerdown" (one event per interaction) instead of the
-  // mousedown + touchstart pair — on iOS Safari the synthetic mousedown
-  // can fire with document.body as target rather than the actual element,
-  // making the handler incorrectly close the menu when tapping a menu item.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-    };
-  }, [menuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -120,7 +101,7 @@ export default function Toolbar({
       </div>
 
       {/* ── Mobile hamburger (hidden on desktop) ── */}
-      <div className="toolbar__mobile" ref={menuRef}>
+      <div className="toolbar__mobile">
         <button
           className={`toolbar__burger${menuOpen ? " toolbar__burger--open" : ""}`}
           onClick={() => setMenuOpen((o) => !o)}
@@ -131,91 +112,102 @@ export default function Toolbar({
         </button>
 
         {menuOpen && (
-          <div className="toolbar__dropdown" role="menu">
-            {/* Room rename */}
-            <button
-              className="toolbar__menu-item toolbar__menu-item--room"
-              onClick={() => { isGuest ? guardedSave() : onRename(); closeMenu(); }}
-              role="menuitem"
-            >
-              ✏️ <span className="toolbar__menu-room-name">{roomName}</span>
-            </button>
+          <>
+            {/*
+              Transparent full-screen backdrop. Tapping anywhere outside the
+              dropdown hits this div and closes the menu. It sits at z-index 999,
+              just below the dropdown at z-index 1000, so menu items always
+              receive taps first. Using position:fixed ensures it covers the
+              entire viewport regardless of scroll or any parent overflow.
+            */}
+            <div className="toolbar__backdrop" onClick={closeMenu} />
 
-            <div className="toolbar__menu-divider" />
+            <div className="toolbar__dropdown" role="menu">
+              {/* Room rename */}
+              <button
+                className="toolbar__menu-item toolbar__menu-item--room"
+                onClick={() => { isGuest ? guardedSave() : onRename(); closeMenu(); }}
+                role="menuitem"
+              >
+                ✏️ <span className="toolbar__menu-room-name">{roomName}</span>
+              </button>
 
-            <button
-              className="toolbar__menu-item"
-              onClick={() => { guardedRooms(); closeMenu(); }}
-              role="menuitem"
-            >
-              📂 Rooms
-            </button>
+              <div className="toolbar__menu-divider" />
 
-            <button
-              className="toolbar__menu-item"
-              onClick={() => { onOpenShoppingList(); closeMenu(); }}
-              role="menuitem"
-            >
-              🛒 List
-              {shoppingCount > 0 && (
-                <span className="toolbar__menu-badge">{shoppingCount}</span>
-              )}
-            </button>
+              <button
+                className="toolbar__menu-item"
+                onClick={() => { guardedRooms(); closeMenu(); }}
+                role="menuitem"
+              >
+                📂 Rooms
+              </button>
 
-            <button
-              className="toolbar__menu-item toolbar__menu-item--save"
-              onClick={() => { guardedSave(); closeMenu(); }}
-              disabled={saving}
-              role="menuitem"
-            >
-              💾 {saving ? "Saving…" : "Save"}
-            </button>
+              <button
+                className="toolbar__menu-item"
+                onClick={() => { onOpenShoppingList(); closeMenu(); }}
+                role="menuitem"
+              >
+                🛒 List
+                {shoppingCount > 0 && (
+                  <span className="toolbar__menu-badge">{shoppingCount}</span>
+                )}
+              </button>
 
-            {saveMsg && (
-              <span className={`toolbar__menu-save-msg ${saveMsg.startsWith("✓") ? "ok" : "err"}`}>
-                {saveMsg}
-              </span>
-            )}
+              <button
+                className="toolbar__menu-item toolbar__menu-item--save"
+                onClick={() => { guardedSave(); closeMenu(); }}
+                disabled={saving}
+                role="menuitem"
+              >
+                💾 {saving ? "Saving…" : "Save"}
+              </button>
 
-            <div className="toolbar__menu-divider" />
-
-            <button
-              className="toolbar__menu-item"
-              onClick={() => { toggle(); }}
-              role="menuitem"
-            >
-              {theme === "light" ? "🌙 Dark mode" : "☀️ Light mode"}
-            </button>
-
-            <div className="toolbar__menu-divider" />
-
-            {isGuest ? (
-              <>
-                <span className="toolbar__menu-label">Browsing as guest</span>
-                <button
-                  className="toolbar__menu-item toolbar__menu-item--primary"
-                  onClick={() => { onSignIn?.(); closeMenu(); }}
-                  role="menuitem"
-                >
-                  Sign in to save rooms
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="toolbar__menu-label">{user?.email}</span>
-                <span className={`toolbar__menu-badge-plan ${isPro ? "pro" : "free"}`}>
-                  {isPro ? "✦ Pro" : "Free plan"}
+              {saveMsg && (
+                <span className={`toolbar__menu-save-msg ${saveMsg.startsWith("✓") ? "ok" : "err"}`}>
+                  {saveMsg}
                 </span>
-                <button
-                  className="toolbar__menu-item toolbar__menu-item--ghost"
-                  onClick={() => { signOut(); closeMenu(); }}
-                  role="menuitem"
-                >
-                  Sign out
-                </button>
-              </>
-            )}
-          </div>
+              )}
+
+              <div className="toolbar__menu-divider" />
+
+              <button
+                className="toolbar__menu-item"
+                onClick={() => { toggle(); closeMenu(); }}
+                role="menuitem"
+              >
+                {theme === "light" ? "🌙 Dark mode" : "☀️ Light mode"}
+              </button>
+
+              <div className="toolbar__menu-divider" />
+
+              {isGuest ? (
+                <>
+                  <span className="toolbar__menu-label">Browsing as guest</span>
+                  <button
+                    className="toolbar__menu-item toolbar__menu-item--primary"
+                    onClick={() => { onSignIn?.(); closeMenu(); }}
+                    role="menuitem"
+                  >
+                    Sign in to save rooms
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="toolbar__menu-label">{user?.email}</span>
+                  <span className={`toolbar__menu-badge-plan ${isPro ? "pro" : "free"}`}>
+                    {isPro ? "✦ Pro" : "Free plan"}
+                  </span>
+                  <button
+                    className="toolbar__menu-item toolbar__menu-item--ghost"
+                    onClick={() => { signOut(); closeMenu(); }}
+                    role="menuitem"
+                  >
+                    Sign out
+                  </button>
+                </>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

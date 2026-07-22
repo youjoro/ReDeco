@@ -3,6 +3,78 @@ import { FURNITURE_FIXTURES } from "../../lib/furnitureFixtures";
 import { loadImageSize, removeImageBackground } from "../../lib/imageUtils";
 import "./SearchTab.css";
 
+// Touch-drag helper — attaches non-passive move/end listeners imperatively so
+// we can call preventDefault() and suppress the following click on drags.
+function startTouchDrag(e, item) {
+  const t0 = e.touches[0];
+  const startX = t0.clientX;
+  const startY = t0.clientY;
+
+  // Ghost image that follows the finger
+  const ghost = document.createElement("div");
+  ghost.style.cssText = [
+    "position:fixed",
+    `left:${startX}px`,
+    `top:${startY}px`,
+    "width:80px",
+    "height:80px",
+    "transform:translate(-50%,-50%)",
+    "pointer-events:none",
+    "z-index:9999",
+    "border-radius:10px",
+    "overflow:hidden",
+    "box-shadow:0 8px 28px rgba(0,0,0,0.35)",
+    "opacity:0.88",
+    "transition:none",
+  ].join(";");
+  const img = document.createElement("img");
+  img.src = item.image_url;
+  img.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;";
+  ghost.appendChild(img);
+  document.body.appendChild(ghost);
+
+  let dragging = false;
+
+  const onMove = (ev) => {
+    const t = ev.touches[0];
+    const dist = Math.hypot(t.clientX - startX, t.clientY - startY);
+    if (dist > 6) {
+      dragging = true;
+      ev.preventDefault(); // stop the sidebar from scrolling
+    }
+    ghost.style.left = `${t.clientX}px`;
+    ghost.style.top  = `${t.clientY}px`;
+  };
+
+  const cleanup = () => {
+    document.removeEventListener("touchmove",   onMove,   { passive: false });
+    document.removeEventListener("touchend",    onEnd);
+    document.removeEventListener("touchcancel", onCancel);
+    if (ghost.parentNode) document.body.removeChild(ghost);
+  };
+
+  const onEnd = (ev) => {
+    cleanup();
+    if (!dragging) return; // short tap → let onClick fire normally
+    ev.preventDefault(); // suppress the click that would follow
+    const t = ev.changedTouches[0];
+    document.dispatchEvent(new CustomEvent("canvasTouchDrop", {
+      detail: {
+        src:     item.image_url,
+        label:   item.name,
+        clientX: t.clientX,
+        clientY: t.clientY,
+      },
+    }));
+  };
+
+  const onCancel = () => cleanup();
+
+  document.addEventListener("touchmove",   onMove,   { passive: false });
+  document.addEventListener("touchend",    onEnd);
+  document.addEventListener("touchcancel", onCancel);
+}
+
 export default function SearchTab({ onAddItem }) {
   const [query,   setQuery]   = useState("");
   const [adding,  setAdding]  = useState(null);
@@ -109,6 +181,7 @@ export default function SearchTab({ onAddItem }) {
                 onClick={() => !adding && handleAdd(item.image_url, item.name)}
                 draggable
                 onDragStart={(e) => handleDragStart(e, item.image_url, item.name)}
+                onTouchStart={(e) => !adding && startTouchDrag(e, item)}
                 title={`${item.name} — $${item.price}`}
               >
                 <img

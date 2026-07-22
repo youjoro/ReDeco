@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import FurnitureItem from "./FurnitureItem";
 import GridSlider from "../GridSlider/GridSlider";
 import { snap } from "../../lib/snapGrid";
@@ -7,8 +7,42 @@ import "./Canvas.css";
 export default function Canvas({ background, items, onItemsChange, onBackgroundChange, onAddToList }) {
   const [selectedId, setSelectedId] = useState(null);
   const [gridSize,   setGridSize]   = useState(0);
+  const canvasAreaRef = useRef(null);
 
   const update = (fn) => onItemsChange(typeof fn === "function" ? fn(items) : fn);
+
+  // ── Touch-drag drop from sidebar ───────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const { src, label, clientX, clientY } = e.detail;
+      const canvasEl = canvasAreaRef.current;
+      if (!canvasEl) return;
+
+      const rect = canvasEl.getBoundingClientRect();
+      if (clientX < rect.left || clientX > rect.right ||
+          clientY < rect.top  || clientY > rect.bottom) return;
+
+      const x = snap(clientX - rect.left, gridSize);
+      const y = snap(clientY - rect.top,  gridSize);
+
+      onItemsChange((prev) => {
+        const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;
+        return [...prev, {
+          id:       Math.max(0, ...prev.map((i) => i.id)) + 1,
+          src,
+          label:    label || "item",
+          x, y,
+          width:    150,
+          height:   150,
+          rotation: 0,
+          zOrder:   maxZ + 1,
+        }];
+      });
+    };
+
+    document.addEventListener("canvasTouchDrop", handler);
+    return () => document.removeEventListener("canvasTouchDrop", handler);
+  }, [gridSize, onItemsChange]);
 
   const handleDrag   = (id, pos)      => update((p) => p.map((i) => i.id === id ? { ...i, ...pos }      : i));
   const handleResize = (id, size)     => update((p) => p.map((i) => i.id === id ? { ...i, ...size }     : i));
@@ -158,6 +192,7 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
 
       {/* Drop area */}
       <div
+        ref={canvasAreaRef}
         className={`canvas-area${background ? " canvas-area--has-bg" : ""}`}
         style={gridStyle}
         onClick={() => setSelectedId(null)}

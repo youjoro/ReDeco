@@ -16,7 +16,11 @@ export default function Toolbar({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Close menu when clicking/touching outside
+  // Close menu when clicking/touching outside.
+  // Uses "pointerdown" (one event per interaction) instead of the
+  // mousedown + touchstart pair — on iOS Safari the synthetic mousedown
+  // can fire with document.body as target rather than the actual element,
+  // making the handler incorrectly close the menu when tapping a menu item.
   useEffect(() => {
     if (!menuOpen) return;
     const close = (e) => {
@@ -24,11 +28,9 @@ export default function Toolbar({
         setMenuOpen(false);
       }
     };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("touchstart", close);
+    document.addEventListener("pointerdown", close);
     return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("touchstart", close);
+      document.removeEventListener("pointerdown", close);
     };
   }, [menuOpen]);
 

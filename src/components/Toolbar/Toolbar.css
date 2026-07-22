@@ -11,20 +11,28 @@
   padding-right: max(14px, env(safe-area-inset-right));
 }
 
+/* ── Brand ── */
 .toolbar__brand {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-right: 4px;
+  flex-shrink: 0;
 }
 .toolbar__brand-logo {
   width: 24px;
   height: 24px;
   object-fit: cover;
-  flex-shrink: 0;
   border-radius: 6px;
+  flex-shrink: 0;
 }
 .toolbar__brand-name { color: #f5f0ea; font-weight: 700; font-size: 13px; white-space: nowrap; }
+
+/* ── Desktop action strip ── */
+.toolbar__desktop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .toolbar__divider {
   width: 1px;
@@ -72,19 +80,14 @@
 .toolbar__btn--cart { position: relative; }
 .toolbar__cart-badge {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 15px;
-  height: 15px;
+  top: -6px; right: -6px;
+  min-width: 15px; height: 15px;
   padding: 0 3px;
   border-radius: 100px;
   background: var(--gradient-accent);
   color: white;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
   line-height: 1;
 }
 
@@ -97,13 +100,12 @@
 .toolbar__btn--primary:not(:disabled):hover { opacity: 0.92; transform: translateY(-1px); }
 
 .toolbar__save-msg {
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
 }
 .toolbar__save-msg--ok  { color: #5ec99a; }
 .toolbar__save-msg--err { color: #e8806a; }
 
+/* ── Right section (desktop) ── */
 .toolbar__right {
   margin-left: auto;
   display: flex;
@@ -112,65 +114,197 @@
 }
 
 .toolbar__theme-toggle {
-  width: 30px;
-  height: 30px;
+  width: 30px; height: 30px;
   border-radius: 8px;
   border: 1px solid var(--toolbar-bdr);
   background: rgba(255,255,255,0.06);
   cursor: pointer;
   font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   transition: background 0.15s;
   flex-shrink: 0;
 }
 .toolbar__theme-toggle:hover { background: rgba(255,255,255,0.14); }
 
 .toolbar__plan-badge {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 10px; font-weight: 700;
   padding: 2px 8px;
   border-radius: 100px;
   white-space: nowrap;
   letter-spacing: 0.02em;
 }
-.toolbar__plan-badge--free {
-  background: rgba(255,255,255,0.08);
-  color: #a89d96;
-  border: 1px solid var(--toolbar-bdr);
-}
-.toolbar__plan-badge--pro {
-  background: var(--gradient-accent);
-  color: #fff;
-  box-shadow: 0 1px 6px rgba(184,92,56,0.4);
-}
-.toolbar__plan-badge--guest {
-  background: rgba(255,255,255,0.06);
-  color: #a89d96;
-  border: 1px solid var(--toolbar-bdr);
-}
+.toolbar__plan-badge--free  { background: rgba(255,255,255,0.08); color: #a89d96; border: 1px solid var(--toolbar-bdr); }
+.toolbar__plan-badge--pro   { background: var(--gradient-accent); color: #fff; box-shadow: 0 1px 6px rgba(184,92,56,0.4); }
+.toolbar__plan-badge--guest { background: rgba(255,255,255,0.06); color: #a89d96; border: 1px solid var(--toolbar-bdr); }
 
-.toolbar__btn--signin {
-  font-size: 12px;
-  padding: 6px 14px;
-}
+.toolbar__btn--signin { font-size: 12px; padding: 6px 14px; }
 
 .toolbar__email {
-  color: #a89d96;
-  font-size: 11px;
+  color: #a89d96; font-size: 11px;
+  white-space: nowrap; max-width: 140px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Mobile hamburger (hidden on desktop) ── */
+.toolbar__mobile {
+  display: none;
+  margin-left: auto;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toolbar__burger {
+  width: 34px; height: 34px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--toolbar-bdr);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+}
+.toolbar__burger:hover,
+.toolbar__burger--open { background: rgba(255,255,255,0.14); }
+
+.toolbar__burger span {
+  display: block;
+  width: 16px; height: 1.5px;
+  background: #e8e0d8;
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+  transform-origin: center;
+}
+/* Animate to ✕ when open */
+.toolbar__burger--open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.toolbar__burger--open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.toolbar__burger--open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+/* ── Mobile dropdown menu ── */
+.toolbar__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--gradient-dark);
+  border: 1px solid var(--toolbar-bdr);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  padding: 6px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* Slide in from above */
+  animation: dropdownIn 0.16s ease;
+}
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.toolbar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #e8e0d8;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+.toolbar__menu-item:hover { background: rgba(255,255,255,0.08); }
+.toolbar__menu-item:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.toolbar__menu-item--room {
+  font-size: 12px;
+  color: #c0b8b0;
+}
+.toolbar__menu-room-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 140px;
+  max-width: 160px;
+}
+
+.toolbar__menu-item--save {
+  background: var(--gradient-accent);
+  color: #fff;
+  font-weight: 700;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(184,92,56,0.3);
+}
+.toolbar__menu-item--save:hover { opacity: 0.9; background: var(--gradient-accent); }
+
+.toolbar__menu-item--primary {
+  background: var(--gradient-accent);
+  color: #fff;
+  font-weight: 700;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(184,92,56,0.3);
+}
+.toolbar__menu-item--primary:hover { opacity: 0.9; background: var(--gradient-accent); }
+
+.toolbar__menu-item--ghost { color: #a89d96; }
+
+.toolbar__menu-badge {
+  margin-left: auto;
+  min-width: 18px; height: 18px;
+  padding: 0 4px;
+  border-radius: 100px;
+  background: var(--gradient-accent);
+  color: white;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.toolbar__menu-save-msg {
+  font-size: 11px; font-weight: 600;
+  text-align: center; padding: 2px 12px;
+}
+.toolbar__menu-save-msg.ok  { color: #5ec99a; }
+.toolbar__menu-save-msg.err { color: #e8806a; }
+
+.toolbar__menu-divider {
+  height: 1px;
+  background: var(--toolbar-bdr);
+  margin: 4px 6px;
+}
+
+.toolbar__menu-label {
+  font-size: 10px;
+  color: #a89d96;
+  padding: 4px 12px 0;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ── Mobile toolbar ── */
+.toolbar__menu-badge-plan {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 10px; margin: 2px 6px;
+  border-radius: 100px;
+  text-align: center;
+}
+.toolbar__menu-badge-plan.free { background: rgba(255,255,255,0.08); color: #a89d96; border: 1px solid var(--toolbar-bdr); }
+.toolbar__menu-badge-plan.pro  { background: var(--gradient-accent); color: #fff; }
+
+/* ── Mobile breakpoint ── */
 @media (max-width: 640px) {
-  .toolbar { height: 48px; gap: 6px; padding: 0 10px; }
-  .toolbar__brand-name  { display: none; }
-  .toolbar__divider     { display: none; }
-  .toolbar__email       { display: none; }
-  .toolbar__room-name   { max-width: 110px; font-size: 11px; padding: 3px 8px; }
-  .toolbar__btn         { padding: 4px 8px; font-size: 11px; }
+  .toolbar { height: 48px; padding: 0 10px; gap: 8px; }
+
+  /* Hide desktop elements */
+  .toolbar__desktop { display: none; }
+  .toolbar__right   { display: none; }
+
+  /* Show hamburger */
+  .toolbar__mobile { display: flex; align-items: center; }
 }

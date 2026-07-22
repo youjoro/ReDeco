@@ -1,60 +1,53 @@
-import { useState } from "react";
-import rateLimiter from "../../lib/rateLimiter";
+import { useState, useMemo } from "react";
+import { FURNITURE_FIXTURES } from "../../lib/furnitureFixtures";
 import { loadImageSize, removeImageBackground } from "../../lib/imageUtils";
 import "./SearchTab.css";
 
-const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_KEY;
-const PIXABAY_BASE    = "https://pixabay.com/api/";
-
 export default function SearchTab({ onAddItem }) {
-  const [query,      setQuery]      = useState("");
-  const [results,    setResults]    = useState([]);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState("");
-  const [page,       setPage]       = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [adding,     setAdding]     = useState(null);
-  const [remaining,  setRemaining]  = useState(rateLimiter.remaining());
+  const [query,   setQuery]   = useState("");
+  const [adding,  setAdding]  = useState(null);
+  const [error,   setError]   = useState("");
 
-  const search = async (q = query, p = 1) => {
-    if (!q.trim()) return;
-    if (!rateLimiter.canRequest()) { setError("Rate limit reached. Wait a moment."); return; }
-    setRemaining(rateLimiter.remaining());
-    setLoading(true); setError(""); setResults([]);
-    try {
-      const url  = `${PIXABAY_BASE}?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(q)}&image_type=photo&per_page=24&page=${p}&safesearch=true`;
-      const res  = await fetch(url);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setResults(data.hits || []);
-      setTotalPages(Math.ceil((data.totalHits || 0) / 24));
-      setPage(p);
-    } catch { setError("Search failed. Check your API key."); }
-    finally { setLoading(false); }
-  };
+  // Filter the fixture catalogue by the current query.
+  // Empty query → show everything.
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return FURNITURE_FIXTURES;
+    return FURNITURE_FIXTURES.filter((item) => {
+      if (item.name.toLowerCase().includes(q)) return true;
+      if (item.tags.some((t) => t.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }, [query]);
 
   const handleAdd = async (src, label) => {
     setAdding(src);
+    setError("");
     try {
       const cleaned = await removeImageBackground(src);
       const size    = await loadImageSize(cleaned);
       onAddItem(cleaned, size, label);
     } catch {
-      const size = await loadImageSize(src);
-      onAddItem(src, size, label);
+      try {
+        const size = await loadImageSize(src);
+        onAddItem(src, size, label);
+      } catch {
+        setError("Couldn't load that image. Try a different one.");
+      }
     } finally { setAdding(null); }
   };
 
   const handleDragStart = (e, src, label) => {
-    const itemData = {
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("application/json", JSON.stringify({
       src,
       label: label || "furniture",
       width: 150,
       height: 150,
-    };
-    e.dataTransfer.effectAllowed = "copy";
-    e.dataTransfer.setData("application/json", JSON.stringify(itemData));
+    }));
   };
+
+  const handleClear = () => setQuery("");
 
   return (
     <div className="search-tab">
@@ -62,81 +55,82 @@ export default function SearchTab({ onAddItem }) {
       <div className="search-tab__bar">
         <input
           className="search-tab__input"
-          type="text" placeholder="sofa, chair, lamp…"
-          value={query} onChange={(e) => setQuery(e.target.value.slice(0, 100))}
-          onKeyDown={(e) => e.key === "Enter" && search()}
-          maxLength={100}
+          type="text"
+          placeholder="sofa, chair, lamp, rug…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value.slice(0, 80))}
+          maxLength={80}
           autoComplete="off"
           spellCheck={false}
+          aria-label="Filter furniture"
         />
-        <button className="search-tab__go" onClick={() => search()} disabled={loading}>
-          {loading ? "…" : "↵"}
-        </button>
+        {query ? (
+          <button className="search-tab__clear" onClick={handleClear} aria-label="Clear filter">✕</button>
+        ) : (
+          <span className="search-tab__search-icon">🔍</span>
+        )}
       </div>
 
-      <p className="search-tab__rate">
-        Requests left: <strong className={remaining < 20 ? "warn" : ""}>{remaining}</strong> / 80
+      {/* Status row */}
+      <p className="search-tab__count">
+        {query
+          ? <><strong>{results.length}</strong> result{results.length !== 1 ? "s" : ""} for "<em>{query}</em>"</>
+          : <><strong>{results.length}</strong> items — tap or drag to place</>
+        }
       </p>
 
-      {adding && <div className="search-tab__notice search-tab__notice--removing"><span>✂️</span> Removing background…</div>}
-      {error  && <div className="search-tab__notice search-tab__notice--error"   ><span>⚠️</span> {error}</div>}
+      {adding && (
+        <div className="search-tab__notice search-tab__notice--removing">
+          <span>✂️</span> Removing background…
+        </div>
+      )}
+      {error && (
+        <div className="search-tab__notice search-tab__notice--error">
+          <span>⚠️</span> {error}
+        </div>
+      )}
 
-      {/* Scrollable results */}
+      {/* Scrollable catalogue grid */}
       <div className="search-tab__scroll">
-        {loading && (
+        {results.length === 0 && (
           <div className="search-tab__empty">
-            <span className="search-tab__empty-icon">🔍</span>
-            <span className="search-tab__empty-text">Searching Pixabay…</span>
+            <span className="search-tab__empty-icon">🛋️</span>
+            <span className="search-tab__empty-text">No items match "{query}"</span>
+            <button className="search-tab__reset" onClick={handleClear}>Show all</button>
           </div>
         )}
 
-        {!loading && results.length === 0 && !query && (
-          <div className="search-tab__empty">
-            <span className="search-tab__empty-icon">🪴</span>
-            <span className="search-tab__empty-text">Search for furniture to add to your room</span>
-          </div>
-        )}
-
-        {!loading && results.length === 0 && query && !error && (
-          <div className="search-tab__empty">
-            <span className="search-tab__empty-text">No results for "{query}"</span>
-          </div>
-        )}
-
-        {!loading && results.length > 0 && (
+        {results.length > 0 && (
           <div className="search-tab__grid">
-            {results.map((img) => (
+            {results.map((item) => (
               <div
-                key={img.id}
-                className={`search-tab__result${adding === img.webformatURL ? " search-tab__result--adding" : ""}`}
-                onClick={() => !adding && handleAdd(img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
+                key={item.id}
+                className={`search-tab__result${adding === item.image_url ? " search-tab__result--adding" : ""}`}
+                onClick={() => !adding && handleAdd(item.image_url, item.name)}
                 draggable
-                onDragStart={(e) => handleDragStart(e, img.webformatURL, img.tags?.split(",")[0]?.trim() || "furniture")}
+                onDragStart={(e) => handleDragStart(e, item.image_url, item.name)}
+                title={`${item.name} — $${item.price}`}
               >
                 <img
-                  src={img.previewURL?.replace(/^http:\/\//, "https://")} alt={img.tags}
+                  src={item.image_url}
+                  alt={item.name}
+                  loading="lazy"
                   onError={(e) => {
                     if (!e.target.dataset.errored) {
                       e.target.dataset.errored = "1";
-                      e.target.src = "https://placehold.co/120x120/fdf0e6/c4a882?text=?";
+                      e.target.src = "https://placehold.co/200x200/f5f0ea/c4a882?text=?";
                     }
                   }}
                 />
-                {adding === img.webformatURL && <div className="search-tab__result-overlay">✂️</div>}
+                {adding === item.image_url && (
+                  <div className="search-tab__result-overlay">✂️</div>
+                )}
+                <span className="search-tab__result-label">{item.name}</span>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Pagination */}
-      {results.length > 0 && (
-        <div className="search-tab__pagination">
-          <button className="search-tab__page-btn" onClick={() => search(query, page - 1)} disabled={page <= 1 || loading}>← Prev</button>
-          <span className="search-tab__page-info">{page} / {totalPages}</span>
-          <button className="search-tab__page-btn" onClick={() => search(query, page + 1)} disabled={page >= totalPages || loading}>Next →</button>
-        </div>
-      )}
     </div>
   );
 }

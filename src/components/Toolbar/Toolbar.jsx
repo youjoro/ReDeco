@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { signOut } from "../../lib/supabase";
 import FeedbackButton from "../Feedback/FeedbackButton";
 import { useTheme } from "../../context/ThemeContext";
@@ -8,10 +9,30 @@ export default function Toolbar({
   roomName, saving, saveMsg,
   onSave, onRename, onOpenRooms, onOpenShoppingList,
   shoppingCount = 0,
-  onSignIn,          // called when a guest taps a protected action
+  onSignIn,
 }) {
   const { theme, toggle } = useTheme();
-  const isGuest = !user;
+  const isGuest  = !user;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking/touching outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuOpen(false);
 
   const guardedSave = () => {
     if (isGuest) { onSignIn?.(); return; }
@@ -25,36 +46,41 @@ export default function Toolbar({
 
   return (
     <div className="toolbar">
+      {/* ── Brand (always visible) ── */}
       <div className="toolbar__brand">
         <img src="/logo.png" alt="ReDeco" className="toolbar__brand-logo" />
         <span className="toolbar__brand-name">ReDeco</span>
       </div>
 
-      <div className="toolbar__divider" />
+      {/* ── Desktop action strip (hidden on mobile) ── */}
+      <div className="toolbar__desktop">
+        <div className="toolbar__divider" />
 
-      <button className="toolbar__room-name" onClick={isGuest ? guardedSave : onRename}>
-        ✏️ {roomName}
-      </button>
+        <button className="toolbar__room-name" onClick={isGuest ? guardedSave : onRename}>
+          ✏️ {roomName}
+        </button>
 
-      <button className="toolbar__btn toolbar__btn--ghost" onClick={guardedRooms}>
-        📂 Rooms
-      </button>
+        <button className="toolbar__btn toolbar__btn--ghost" onClick={guardedRooms}>
+          📂 Rooms
+        </button>
 
-      <button className="toolbar__btn toolbar__btn--ghost toolbar__btn--cart" onClick={onOpenShoppingList}>
-        🛒 List
-        {shoppingCount > 0 && <span className="toolbar__cart-badge">{shoppingCount}</span>}
-      </button>
+        <button className="toolbar__btn toolbar__btn--ghost toolbar__btn--cart" onClick={onOpenShoppingList}>
+          🛒 List
+          {shoppingCount > 0 && <span className="toolbar__cart-badge">{shoppingCount}</span>}
+        </button>
 
-      <button className="toolbar__btn toolbar__btn--primary" onClick={guardedSave} disabled={saving}>
-        {saving ? "Saving…" : "💾 Save"}
-      </button>
+        <button className="toolbar__btn toolbar__btn--primary" onClick={guardedSave} disabled={saving}>
+          {saving ? "Saving…" : "💾 Save"}
+        </button>
 
-      {saveMsg && (
-        <span className={`toolbar__save-msg ${saveMsg.startsWith("✓") ? "toolbar__save-msg--ok" : "toolbar__save-msg--err"}`}>
-          {saveMsg}
-        </span>
-      )}
+        {saveMsg && (
+          <span className={`toolbar__save-msg ${saveMsg.startsWith("✓") ? "toolbar__save-msg--ok" : "toolbar__save-msg--err"}`}>
+            {saveMsg}
+          </span>
+        )}
+      </div>
 
+      {/* ── Desktop right section ── */}
       <div className="toolbar__right">
         {isGuest ? (
           <>
@@ -88,6 +114,106 @@ export default function Toolbar({
               Sign out
             </button>
           </>
+        )}
+      </div>
+
+      {/* ── Mobile hamburger (hidden on desktop) ── */}
+      <div className="toolbar__mobile" ref={menuRef}>
+        <button
+          className={`toolbar__burger${menuOpen ? " toolbar__burger--open" : ""}`}
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+        >
+          <span /><span /><span />
+        </button>
+
+        {menuOpen && (
+          <div className="toolbar__dropdown" role="menu">
+            {/* Room rename */}
+            <button
+              className="toolbar__menu-item toolbar__menu-item--room"
+              onClick={() => { isGuest ? guardedSave() : onRename(); closeMenu(); }}
+              role="menuitem"
+            >
+              ✏️ <span className="toolbar__menu-room-name">{roomName}</span>
+            </button>
+
+            <div className="toolbar__menu-divider" />
+
+            <button
+              className="toolbar__menu-item"
+              onClick={() => { guardedRooms(); closeMenu(); }}
+              role="menuitem"
+            >
+              📂 Rooms
+            </button>
+
+            <button
+              className="toolbar__menu-item"
+              onClick={() => { onOpenShoppingList(); closeMenu(); }}
+              role="menuitem"
+            >
+              🛒 List
+              {shoppingCount > 0 && (
+                <span className="toolbar__menu-badge">{shoppingCount}</span>
+              )}
+            </button>
+
+            <button
+              className="toolbar__menu-item toolbar__menu-item--save"
+              onClick={() => { guardedSave(); closeMenu(); }}
+              disabled={saving}
+              role="menuitem"
+            >
+              💾 {saving ? "Saving…" : "Save"}
+            </button>
+
+            {saveMsg && (
+              <span className={`toolbar__menu-save-msg ${saveMsg.startsWith("✓") ? "ok" : "err"}`}>
+                {saveMsg}
+              </span>
+            )}
+
+            <div className="toolbar__menu-divider" />
+
+            <button
+              className="toolbar__menu-item"
+              onClick={() => { toggle(); }}
+              role="menuitem"
+            >
+              {theme === "light" ? "🌙 Dark mode" : "☀️ Light mode"}
+            </button>
+
+            <div className="toolbar__menu-divider" />
+
+            {isGuest ? (
+              <>
+                <span className="toolbar__menu-label">Browsing as guest</span>
+                <button
+                  className="toolbar__menu-item toolbar__menu-item--primary"
+                  onClick={() => { onSignIn?.(); closeMenu(); }}
+                  role="menuitem"
+                >
+                  Sign in to save rooms
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="toolbar__menu-label">{user?.email}</span>
+                <span className={`toolbar__menu-badge-plan ${isPro ? "pro" : "free"}`}>
+                  {isPro ? "✦ Pro" : "Free plan"}
+                </span>
+                <button
+                  className="toolbar__menu-item toolbar__menu-item--ghost"
+                  onClick={() => { signOut(); closeMenu(); }}
+                  role="menuitem"
+                >
+                  Sign out
+                </button>
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

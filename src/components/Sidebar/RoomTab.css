@@ -57,3 +57,9 @@
   background: var(--gradient-accent); color: white;
   font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
 }
+
+.room-tab__error {
+  font-size: 11px; color: #c0392b;
+  background: #fdf0ef; border: 1px solid #f5c6c2;
+  border-radius: 7px; padding: 7px 10px; margin: 0;
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ReactDOM from "react-dom";
 import { signOut } from "../../lib/supabase";
 import FeedbackButton from "../Feedback/FeedbackButton";
 import { useTheme } from "../../context/ThemeContext";
@@ -110,106 +111,107 @@ export default function Toolbar({
         >
           <span /><span /><span />
         </button>
-
-        {menuOpen && (
-          <>
-            {/*
-              Transparent full-screen backdrop. Tapping anywhere outside the
-              dropdown hits this div and closes the menu. It sits at z-index 999,
-              just below the dropdown at z-index 1000, so menu items always
-              receive taps first. Using position:fixed ensures it covers the
-              entire viewport regardless of scroll or any parent overflow.
-            */}
-            <div className="toolbar__backdrop" onClick={closeMenu} />
-
-            <div className="toolbar__dropdown" role="menu">
-              {/* Room rename */}
-              <button
-                className="toolbar__menu-item toolbar__menu-item--room"
-                onClick={() => { isGuest ? guardedSave() : onRename(); closeMenu(); }}
-                role="menuitem"
-              >
-                ✏️ <span className="toolbar__menu-room-name">{roomName}</span>
-              </button>
-
-              <div className="toolbar__menu-divider" />
-
-              <button
-                className="toolbar__menu-item"
-                onClick={() => { guardedRooms(); closeMenu(); }}
-                role="menuitem"
-              >
-                📂 Rooms
-              </button>
-
-              <button
-                className="toolbar__menu-item"
-                onClick={() => { onOpenShoppingList(); closeMenu(); }}
-                role="menuitem"
-              >
-                🛒 List
-                {shoppingCount > 0 && (
-                  <span className="toolbar__menu-badge">{shoppingCount}</span>
-                )}
-              </button>
-
-              <button
-                className="toolbar__menu-item toolbar__menu-item--save"
-                onClick={() => { guardedSave(); closeMenu(); }}
-                disabled={saving}
-                role="menuitem"
-              >
-                💾 {saving ? "Saving…" : "Save"}
-              </button>
-
-              {saveMsg && (
-                <span className={`toolbar__menu-save-msg ${saveMsg.startsWith("✓") ? "ok" : "err"}`}>
-                  {saveMsg}
-                </span>
-              )}
-
-              <div className="toolbar__menu-divider" />
-
-              <button
-                className="toolbar__menu-item"
-                onClick={() => { toggle(); closeMenu(); }}
-                role="menuitem"
-              >
-                {theme === "light" ? "🌙 Dark mode" : "☀️ Light mode"}
-              </button>
-
-              <div className="toolbar__menu-divider" />
-
-              {isGuest ? (
-                <>
-                  <span className="toolbar__menu-label">Browsing as guest</span>
-                  <button
-                    className="toolbar__menu-item toolbar__menu-item--primary"
-                    onClick={() => { onSignIn?.(); closeMenu(); }}
-                    role="menuitem"
-                  >
-                    Sign in to save rooms
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="toolbar__menu-label">{user?.email}</span>
-                  <span className={`toolbar__menu-badge-plan ${isPro ? "pro" : "free"}`}>
-                    {isPro ? "✦ Pro" : "Free plan"}
-                  </span>
-                  <button
-                    className="toolbar__menu-item toolbar__menu-item--ghost"
-                    onClick={() => { signOut(); closeMenu(); }}
-                    role="menuitem"
-                  >
-                    Sign out
-                  </button>
-                </>
-              )}
-            </div>
-          </>
-        )}
       </div>
+
+      {/*
+        Portal: renders backdrop + dropdown directly into document.body,
+        completely bypassing the canvas-enter-toolbar animation wrapper which
+        creates a CSS containing block for position:fixed elements (due to
+        transform in its keyframes + fill-mode:both). Without the portal the
+        backdrop would only cover the 44px toolbar strip, leaving touches on
+        the menu items intercepted by the canvas beneath.
+      */}
+      {menuOpen && ReactDOM.createPortal(
+        <>
+          <div className="toolbar__backdrop" onClick={closeMenu} />
+          <div className="toolbar__dropdown" role="menu">
+            {/* Room rename */}
+            <button
+              className="toolbar__menu-item toolbar__menu-item--room"
+              onClick={() => { isGuest ? guardedSave() : onRename(); closeMenu(); }}
+              role="menuitem"
+            >
+              ✏️ <span className="toolbar__menu-room-name">{roomName}</span>
+            </button>
+
+            <div className="toolbar__menu-divider" />
+
+            <button
+              className="toolbar__menu-item"
+              onClick={() => { guardedRooms(); closeMenu(); }}
+              role="menuitem"
+            >
+              📂 Rooms
+            </button>
+
+            <button
+              className="toolbar__menu-item"
+              onClick={() => { onOpenShoppingList(); closeMenu(); }}
+              role="menuitem"
+            >
+              🛒 List
+              {shoppingCount > 0 && (
+                <span className="toolbar__menu-badge">{shoppingCount}</span>
+              )}
+            </button>
+
+            <button
+              className="toolbar__menu-item toolbar__menu-item--save"
+              onClick={() => { guardedSave(); closeMenu(); }}
+              disabled={saving}
+              role="menuitem"
+            >
+              💾 {saving ? "Saving…" : "Save"}
+            </button>
+
+            {saveMsg && (
+              <span className={`toolbar__menu-save-msg ${saveMsg.startsWith("✓") ? "ok" : "err"}`}>
+                {saveMsg}
+              </span>
+            )}
+
+            <div className="toolbar__menu-divider" />
+
+            <button
+              className="toolbar__menu-item"
+              onClick={() => { toggle(); closeMenu(); }}
+              role="menuitem"
+            >
+              {theme === "light" ? "🌙 Dark mode" : "☀️ Light mode"}
+            </button>
+
+            <div className="toolbar__menu-divider" />
+
+            {isGuest ? (
+              <>
+                <span className="toolbar__menu-label">Browsing as guest</span>
+                <button
+                  className="toolbar__menu-item toolbar__menu-item--primary"
+                  onClick={() => { onSignIn?.(); closeMenu(); }}
+                  role="menuitem"
+                >
+                  Sign in to save rooms
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="toolbar__menu-label">{user?.email}</span>
+                <span className={`toolbar__menu-badge-plan ${isPro ? "pro" : "free"}`}>
+                  {isPro ? "✦ Pro" : "Free plan"}
+                </span>
+                <button
+                  className="toolbar__menu-item toolbar__menu-item--ghost"
+                  onClick={() => { signOut(); closeMenu(); }}
+                  role="menuitem"
+                >
+                  Sign out
+                </button>
+              </>
+            )}
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 }

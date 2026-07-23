@@ -5,6 +5,7 @@
   overflow: hidden;
 }
 
+/* ── Mini-bar ── */
 .canvas-minibar {
   height: 38px;
   flex-shrink: 0;
@@ -13,12 +14,18 @@
   display: flex;
   align-items: center;
   padding: 0 14px;
-  gap: 12px;
+  gap: 10px;
+  /* Never wrap — content must stay on one row */
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .canvas-minibar__count {
   font-size: 11px;
   color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .canvas-minibar__remove {
@@ -31,9 +38,18 @@
   font-size: 11px;
   font-weight: 600;
   font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.canvas-minibar__right { margin-left: auto; }
+/* Right group: zoom + grid slider */
+.canvas-minibar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
 
 /* ── Layer controls ── */
 .canvas-minibar__layers {
@@ -44,6 +60,7 @@
   border: 1px solid var(--toolbar-bdr);
   border-radius: 6px;
   padding: 2px 3px;
+  flex-shrink: 0;
 }
 
 .canvas-minibar__layer-btn {
@@ -76,8 +93,69 @@
   font-size: 10px;
   color: var(--text-faint);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
+/* ── Zoom controls ── */
+.canvas-minibar__zoom {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--toolbar-bdr);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.canvas-minibar__zoom-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.1s, color 0.1s;
+}
+.canvas-minibar__zoom-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  color: var(--text);
+}
+.canvas-minibar__zoom-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+
+.canvas-minibar__zoom-val {
+  min-width: 36px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-sub);
+  border: none;
+  border-left: 1px solid var(--toolbar-bdr);
+  border-right: 1px solid var(--toolbar-bdr);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0 2px;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.canvas-minibar__zoom-val:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--accent);
+}
+
+/* ── Canvas area ── */
 .canvas-area {
   flex: 1;
   position: relative;
@@ -89,6 +167,16 @@
 
 .canvas-area--has-bg {
   background-image: none;
+}
+
+/* canvas-scene is the inner div that receives the CSS zoom transform.
+   It fills the canvas-area 1:1 at zoom=1; at lower zoom values the room
+   background and all furniture items appear smaller, revealing more of the canvas. */
+.canvas-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* transform and transform-origin are set inline via React */
 }
 
 .canvas-area__bg {
@@ -125,10 +213,29 @@
 }
 .canvas-empty__text { font-size: 14px; color: var(--text-sub); font-weight: 500; text-align: center; padding: 0 20px; }
 
-/* ── Mobile canvas ── */
+/* ── Mobile ── */
 @media (max-width: 640px) {
-  .canvas-minibar { height: 36px; padding: 0 10px; gap: 8px; }
+  .canvas-minibar {
+    height: 40px;
+    padding: 0 10px;
+    gap: 6px;
+  }
+
   .canvas-minibar__count { font-size: 10px; }
+
+  /* Hide the layer text label — too wide on mobile; buttons alone suffice */
+  .canvas-minibar__layer-label { display: none; }
+
+  /* Hide grid slider on mobile — it overflows the bar and the grid is rarely
+     needed on touch screens. Zoom controls stay visible in its place. */
+  .canvas-minibar__grid { display: none; }
+
+  /* Make layer buttons slightly larger for touch */
+  .canvas-minibar__layer-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
 
   /* Reserve space at the bottom so the fixed sidebar tab bar
      (~56 px + safe-area) doesn't overlap the canvas area. */

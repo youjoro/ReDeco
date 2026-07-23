@@ -42,7 +42,7 @@ export default function Sidebar({ background, onAddItem, onSetBackground, onClea
 
       {/* Panel — "open" class controls mobile slide-up */}
       <div className={`sidebar__panel${panelOpen ? " open" : ""}`}>
-        {tab === "search" && <SearchTab onAddItem={(src, size, label) => { onAddItem(src, size, label); setPanelOpen(false); }} />}
+        {tab === "search" && <SearchTab onAddItem={(src, size, label) => { onAddItem(src, size, label); setPanelOpen(false); }} onDragStart={() => setPanelOpen(false)} />}
         {tab === "upload" && <UploadTab onAddItem={(src, size, label) => { onAddItem(src, size, label); setPanelOpen(false); }} />}
         {tab === "room"   && <RoomTab   background={background} onSetBackground={onSetBackground} onClearBackground={onClearBackground} />}
       </div>

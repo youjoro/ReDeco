@@ -19,11 +19,19 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
       if (!canvasEl) return;
 
       const rect = canvasEl.getBoundingClientRect();
-      if (clientX < rect.left || clientX > rect.right ||
-          clientY < rect.top  || clientY > rect.bottom) return;
 
-      const x = snap(clientX - rect.left, gridSize);
-      const y = snap(clientY - rect.top,  gridSize);
+      // Clamp the drop point into the canvas area — the sidebar may still be
+      // animating closed when the finger lifts, so we accept any release that
+      // isn't wildly outside the canvas bounds (generous 60 px margin on each
+      // side) and clamp the final position to stay within the canvas.
+      const MARGIN = 60;
+      if (clientX < rect.left - MARGIN || clientX > rect.right  + MARGIN ||
+          clientY < rect.top  - MARGIN || clientY > rect.bottom + MARGIN) return;
+
+      const clampedX = Math.max(rect.left, Math.min(clientX, rect.right));
+      const clampedY = Math.max(rect.top,  Math.min(clientY, rect.bottom));
+      const x = snap(clampedX - rect.left, gridSize);
+      const y = snap(clampedY - rect.top,  gridSize);
 
       onItemsChange((prev) => {
         const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;

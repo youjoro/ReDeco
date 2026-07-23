@@ -4,8 +4,9 @@ import { loadImageSize, removeImageBackground } from "../../lib/imageUtils";
 import "./SearchTab.css";
 
 // Touch-drag helper — attaches non-passive move/end listeners imperatively so
-// we can call preventDefault() and suppress the following click on drags.
-function startTouchDrag(e, item) {
+// we can call preventDefault() on every touchmove and suppress the following
+// click if the gesture turns into a drag.
+function startTouchDrag(e, item, onDragStart) {
   const t0 = e.touches[0];
   const startX = t0.clientX;
   const startY = t0.clientY;
@@ -34,14 +35,25 @@ function startTouchDrag(e, item) {
   document.body.appendChild(ghost);
 
   let dragging = false;
+  let sidebarClosed = false;
 
   const onMove = (ev) => {
+    // Always prevent default so iOS doesn't claim the scroll gesture.
+    ev.preventDefault();
+
     const t = ev.touches[0];
     const dist = Math.hypot(t.clientX - startX, t.clientY - startY);
-    if (dist > 6) {
+
+    if (dist > 8) {
       dragging = true;
-      ev.preventDefault(); // stop the sidebar from scrolling
+      // Collapse the sidebar panel on first real movement so the canvas is
+      // fully visible before the user releases their finger.
+      if (!sidebarClosed && onDragStart) {
+        onDragStart();
+        sidebarClosed = true;
+      }
     }
+
     ghost.style.left = `${t.clientX}px`;
     ghost.style.top  = `${t.clientY}px`;
   };
@@ -75,7 +87,7 @@ function startTouchDrag(e, item) {
   document.addEventListener("touchcancel", onCancel);
 }
 
-export default function SearchTab({ onAddItem }) {
+export default function SearchTab({ onAddItem, onDragStart }) {
   const [query,   setQuery]   = useState("");
   const [adding,  setAdding]  = useState(null);
   const [error,   setError]   = useState("");
@@ -181,7 +193,7 @@ export default function SearchTab({ onAddItem }) {
                 onClick={() => !adding && handleAdd(item.image_url, item.name)}
                 draggable
                 onDragStart={(e) => handleDragStart(e, item.image_url, item.name)}
-                onTouchStart={(e) => !adding && startTouchDrag(e, item)}
+                onTouchStart={(e) => !adding && startTouchDrag(e, item, onDragStart)}
                 title={`${item.name} — $${item.price}`}
               >
                 <img

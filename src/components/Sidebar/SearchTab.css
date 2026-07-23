@@ -3,6 +3,7 @@
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* ── Search bar ── */
@@ -52,15 +53,54 @@
 }
 .search-tab__clear:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
 
-/* ── Status line ── */
-.search-tab__count {
-  font-size: 10px;
-  color: var(--text-faint);
+/* ── Status + arrow row ── */
+.search-tab__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   margin-bottom: 8px;
   flex-shrink: 0;
 }
+
+.search-tab__count {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
 .search-tab__count strong { color: var(--accent); }
 .search-tab__count em    { font-style: normal; color: var(--text-sub); }
+
+/* ── Arrow navigation buttons ── */
+.search-tab__arrows {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.search-tab__arrow {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  font-family: inherit;
+  flex-shrink: 0;
+  padding: 0;
+}
+.search-tab__arrow:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.search-tab__arrow:active { transform: scale(0.92); }
 
 /* ── Notices (bg removal, errors) ── */
 .search-tab__notice {
@@ -74,11 +114,25 @@
 .search-tab__notice--removing { background: var(--accent-light); color: var(--accent); }
 .search-tab__notice--error    { background: var(--danger-bg);    color: var(--danger);  }
 
-/* ── Scrollable results area ── */
+/* ── Horizontal carousel scroll container ── */
 .search-tab__scroll {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Scroll snap — each card snaps into view */
+  scroll-snap-type: x mandatory;
+  /* Thin scrollbar on desktop */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  /* Negative padding trick: let cards visually bleed to edge */
+  padding-bottom: 8px;
+}
+.search-tab__scroll::-webkit-scrollbar { height: 4px; }
+.search-tab__scroll::-webkit-scrollbar-track { background: transparent; }
+.search-tab__scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .search-tab__empty {
@@ -89,6 +143,7 @@
   padding: 32px 16px;
   gap: 8px;
   color: var(--text-faint);
+  min-width: 100%;
 }
 .search-tab__empty-icon { font-size: 32px; }
 .search-tab__empty-text { font-size: 12px; text-align: center; }
@@ -108,18 +163,24 @@
 }
 .search-tab__reset:hover { background: var(--accent-light); }
 
-/* ── Catalogue grid ── */
+/* ── Horizontal item row ── */
 .search-tab__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding-bottom: 4px;
-  padding-right: 2px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  /* Extra right padding so the last card doesn't feel flush */
+  padding-right: 8px;
+  /* Needed so flex children don't get squished */
+  width: max-content;
 }
 
-/* Product-card style: white bg, contain (shows full piece), name label */
+/* ── Individual furniture card ── */
 .search-tab__result {
-  border-radius: 9px;
+  /* Fixed width so cards are uniform and carousel feels intentional */
+  width: 112px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
   border: 1.5px solid var(--border);
@@ -128,19 +189,22 @@
   display: flex;
   flex-direction: column;
   transition: border-color 0.12s, transform 0.12s, box-shadow 0.12s;
+  /* Ensure touch target height is comfortable */
+  min-height: 124px;
 }
 .search-tab__result:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
 }
 .search-tab__result--adding { cursor: wait; }
 
 .search-tab__result img {
   width: 100%;
+  /* Square aspect so all furniture renders consistently */
   aspect-ratio: 1;
-  object-fit: contain;   /* show full furniture, no crop */
-  padding: 6px;
+  object-fit: contain;
+  padding: 8px;
   display: block;
   background: #ffffff;
 }
@@ -170,10 +234,24 @@
 
 /* ── Mobile tweaks ── */
 @media (max-width: 640px) {
-  .search-tab__grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+  /* On mobile the sidebar is a bottom sheet — give the carousel enough height */
+  .search-tab__scroll {
+    /* No max-height cap; the panel height controls it via the sheet */
+    overflow-x: auto;
   }
-  .search-tab__scroll { max-height: 40vh; }
-  .search-tab__result-label { font-size: 9px; padding: 3px 4px; }
+
+  /* Slightly wider cards on mobile for bigger touch targets */
+  .search-tab__result {
+    width: 128px;
+    min-height: 140px;
+  }
+
+  .search-tab__result img {
+    padding: 10px;
+  }
+
+  .search-tab__result-label {
+    font-size: 10px;
+    padding: 5px 6px;
+  }
 }

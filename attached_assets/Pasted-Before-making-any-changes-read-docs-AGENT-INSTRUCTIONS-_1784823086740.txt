@@ -1,0 +1,69 @@
+Before making any changes, read docs/AGENT_INSTRUCTIONS.md for context on the 
+project's current state and conventions.
+
+## Task 1: Improve furniture item browsing UX
+
+The furniture catalog display (where users scroll through items to drag onto 
+the moodboard) is hard to scroll through. Fix this:
+
+- Add proper spacing/gaps between furniture item cards (they currently feel 
+  cramped)
+- Implement a horizontal sidescroller/carousel for the furniture list — should 
+  work well on both mobile (touch swipe) and desktop (mouse drag or scroll 
+  wheel / arrow buttons)
+- Make sure touch targets are large enough on mobile, and that the scroll 
+  interaction doesn't conflict with the drag-and-drop functionality (dragging 
+  an item onto the moodboard vs. scrolling the list need to feel distinct, 
+  not accidentally trigger each other)
+
+## Task 2: Investigate shopping list save bug
+
+There's an issue with saving items to the shopping list while a user is 
+logged in. Investigate and identify the root cause before attempting a fix:
+
+- Check whether items are actually persisting to the shopping_list_items 
+  table, or only updating in local/optimistic state
+- Check the browser console and network tab logic for any failed requests
+- Confirm the RLS policies aren't silently rejecting inserts (auth.uid() 
+  mismatches, etc.) — note that RLS itself was already verified correct 
+  separately, so look at the application code calling these tables first, 
+  not the policies themselves, unless you find clear evidence otherwise
+- Report what you find before implementing a fix, in case it reveals a 
+  larger issue
+
+## Task 3: General UX audit
+
+While you're in the codebase, note (don't necessarily fix unless trivial) 
+any other UX problems you notice — confusing flows, missing loading states, 
+unclear error messages, broken mobile layouts, etc. List these in the PR 
+description rather than fixing all of them now.
+
+## Critical: git/package-lock.json rule (always follow this)
+
+Before pushing any commit, check whether package-lock.json was modified. 
+If it was changed in a way that isn't a direct result of intentionally 
+adding/removing/updating a package (e.g. registry URLs pointing to 
+package-firewall.replit.local or other Replit-internal paths), REVERT 
+package-lock.json to its previous committed state before pushing. This 
+file must stay resolvable against the public npm registry so it works 
+correctly outside Replit (e.g. on Vercel). Do this check every single 
+time before pushing, not just this once.
+
+## Critical: token/effort budget — do not loop on the same fix
+
+- If a fix doesn't work on the first attempt, try ONE alternative approach 
+  at most. Do not attempt the same or similar fix more than twice total.
+- If still unresolved after two attempts, STOP. Do not keep iterating. 
+  Instead, write up what you tried, what happened, and your best hypothesis 
+  for the actual cause, and include this in the PR description or as a 
+  comment for a human to review.
+- Prefer small, targeted diagnostic steps (checking logs, adding a single 
+  console.log, reading the relevant function) over broad speculative 
+  rewrites when investigating a bug.
+- Do not refactor unrelated code while working on these tasks.
+
+## Workflow rules
+- Create a new branch, commit incrementally, and open a PR — do not push 
+  directly to main
+- Keep the PR description clear about what was fixed, what was only 
+  investigated/reported, and what was left for review

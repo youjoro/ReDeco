@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { FURNITURE_FIXTURES } from "../../lib/furnitureFixtures";
-import { loadImageSize, removeImageBackground } from "../../lib/imageUtils";
+import { loadImageSize } from "../../lib/imageUtils";
 import "./SearchTab.css";
 
 // Touch-drag helper — attaches non-passive move/end listeners imperatively so
@@ -88,9 +88,8 @@ function startTouchDrag(e, item, onDragStart) {
 }
 
 export default function SearchTab({ onAddItem, onDragStart }) {
-  const [query,   setQuery]   = useState("");
-  const [adding,  setAdding]  = useState(null);
-  const [error,   setError]   = useState("");
+  const [query,  setQuery]  = useState("");
+  const [adding, setAdding] = useState(null);
 
   // Filter the fixture catalogue by the current query.
   // Empty query → show everything.
@@ -104,21 +103,15 @@ export default function SearchTab({ onAddItem, onDragStart }) {
     });
   }, [query]);
 
-  const handleAdd = async (src, label) => {
+  const handleAdd = (src, label) => {
+    if (adding) return;
     setAdding(src);
-    setError("");
-    try {
-      const cleaned = await removeImageBackground(src);
-      const size    = await loadImageSize(cleaned);
-      onAddItem(cleaned, size, label);
-    } catch {
-      try {
-        const size = await loadImageSize(src);
-        onAddItem(src, size, label);
-      } catch {
-        setError("Couldn't load that image. Try a different one.");
-      }
-    } finally { setAdding(null); }
+    // loadImageSize resolves from the browser's cached thumbnail — near-instant.
+    // Background removal now happens in App after the item lands on the canvas.
+    loadImageSize(src).then((size) => {
+      onAddItem(src, size, label);
+      setAdding(null);
+    });
   };
 
   const handleDragStart = (e, src, label) => {
@@ -162,17 +155,6 @@ export default function SearchTab({ onAddItem, onDragStart }) {
           : <><strong>{results.length}</strong> items — tap or drag to place</>
         }
       </p>
-
-      {adding && (
-        <div className="search-tab__notice search-tab__notice--removing">
-          <span>✂️</span> Removing background…
-        </div>
-      )}
-      {error && (
-        <div className="search-tab__notice search-tab__notice--error">
-          <span>⚠️</span> {error}
-        </div>
-      )}
 
       {/* Scrollable catalogue grid */}
       <div className="search-tab__scroll">

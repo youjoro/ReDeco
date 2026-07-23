@@ -9,6 +9,7 @@ import ShoppingListPanel  from "./components/ShoppingList/ShoppingListPanel";
 import PaywallModal       from "./components/Paywall/PaywallModal";
 import { ShoppingListProvider, useShoppingList } from "./context/ShoppingListContext";
 import { getUser, onAuthChange, signOut, saveRoom, uploadBase64Image } from "./lib/supabase";
+import { removeImageBackground } from "./lib/imageUtils";
 import { snap } from "./lib/snapGrid";
 import "./App.css";
 import { nanoid } from 'nanoid';
@@ -111,23 +112,44 @@ export default function App() {
   const FREE_ITEM_LIMIT = 50;
   const isPro = !!user?.app_metadata?.is_pro;
 
-  // ── Add item from sidebar ──
-  const handleAddItem = (src, size, label) => {
+  // ── Add item from sidebar or canvas drop ──
+  // pos = { x, y } for exact placement (canvas-relative px); null → random.
+  const handleAddItem = (src, size, label, pos = null) => {
     if (!isPro && items.length >= FREE_ITEM_LIMIT) {
       setItemPaywall(true);
       return;
     }
+    const id = `local-${nanoid()}`;
+    const w  = size?.width  || 150;
+    const h  = size?.height || 150;
+    const x  = pos ? pos.x : snap(80 + Math.random() * 200, 0);
+    const y  = pos ? pos.y : snap(60 + Math.random() * 120, 0);
+
+    // Place item immediately so the canvas feels responsive.
     setItems((prev) => {
       const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;
       return [...prev, {
-        id: `local-${nanoid()}`, src, label,
-        x: snap(80 + Math.random() * 200, 0),
-        y: snap(60 + Math.random() * 120, 0),
-        width: size.width, height: size.height,
+        id, src, label,
+        x, y,
+        width: w, height: h,
         rotation: 0,
         zOrder: maxZ + 1,
+        bgRemoving: true,
       }];
     });
+
+    // Remove background async; update the item's src when done.
+    removeImageBackground(src)
+      .then((cleaned) =>
+        setItems((prev) =>
+          prev.map((item) => item.id === id ? { ...item, src: cleaned, bgRemoving: false } : item)
+        )
+      )
+      .catch(() =>
+        setItems((prev) =>
+          prev.map((item) => item.id === id ? { ...item, bgRemoving: false } : item)
+        )
+      );
   };
 
   // ── Save to Supabase (requires auth) ──
@@ -312,6 +334,7 @@ function CanvasApp({
           background={background}
           items={items}
           onItemsChange={setItems}
+          onAddItem={handleAddItem}
           onBackgroundChange={setBackground}
           onAddToList={(canvasItem) => addToList(canvasItem, currentRoom.id)}
         />

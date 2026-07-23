@@ -4,7 +4,7 @@ import GridSlider from "../GridSlider/GridSlider";
 import { snap } from "../../lib/snapGrid";
 import "./Canvas.css";
 
-export default function Canvas({ background, items, onItemsChange, onBackgroundChange, onAddToList }) {
+export default function Canvas({ background, items, onItemsChange, onAddItem, onBackgroundChange, onAddToList }) {
   const [selectedId, setSelectedId] = useState(null);
   const [gridSize,   setGridSize]   = useState(0);
   const canvasAreaRef = useRef(null);
@@ -33,24 +33,13 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
       const x = snap(clampedX - rect.left, gridSize);
       const y = snap(clampedY - rect.top,  gridSize);
 
-      onItemsChange((prev) => {
-        const maxZ = prev.length > 0 ? Math.max(...prev.map((i) => i.zOrder ?? 0)) : -1;
-        return [...prev, {
-          id:       Math.max(0, ...prev.map((i) => i.id)) + 1,
-          src,
-          label:    label || "item",
-          x, y,
-          width:    150,
-          height:   150,
-          rotation: 0,
-          zOrder:   maxZ + 1,
-        }];
-      });
+      // Route through onAddItem so bg removal happens after the item lands.
+      onAddItem(src, { width: 150, height: 150 }, label || "item", { x, y });
     };
 
     document.addEventListener("canvasTouchDrop", handler);
     return () => document.removeEventListener("canvasTouchDrop", handler);
-  }, [gridSize, onItemsChange]);
+  }, [gridSize, onAddItem]);
 
   const handleDrag   = (id, pos)      => update((p) => p.map((i) => i.id === id ? { ...i, ...pos }      : i));
   const handleResize = (id, size)     => update((p) => p.map((i) => i.id === id ? { ...i, ...size }     : i));
@@ -129,19 +118,13 @@ export default function Canvas({ background, items, onItemsChange, onBackgroundC
     if (data) {
       try {
         const itemData = JSON.parse(data);
-        // Create a new item at the drop location
-        const maxZ = items.length > 0 ? Math.max(...items.map((i) => i.zOrder ?? 0)) : -1;
-        update((prev) => [...prev, {
-          id: Math.max(0, ...prev.map((i) => i.id)) + 1,
-          src: itemData.src,
-          label: itemData.label || "item",
-          x,
-          y,
-          width: itemData.width || 150,
-          height: itemData.height || 150,
-          rotation: 0,
-          zOrder: maxZ + 1,
-        }]);
+        // Route through onAddItem so bg removal happens after the item lands.
+        onAddItem(
+          itemData.src,
+          { width: itemData.width || 150, height: itemData.height || 150 },
+          itemData.label || "item",
+          { x, y }
+        );
       } catch (err) {
         console.error("Failed to parse dropped data:", err);
       }

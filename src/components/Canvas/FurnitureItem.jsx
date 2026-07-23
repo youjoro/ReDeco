@@ -121,6 +121,9 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
       onMouseLeave={() => setHovered(false)}
     >
       <img className="furniture__img" src={item.src} alt={item.label || ""} draggable={false} />
+      {item.bgRemoving && (
+        <div className="furniture__bg-removing" title="Removing background…">✂️</div>
+      )}
 
       {showControls && (
         <>

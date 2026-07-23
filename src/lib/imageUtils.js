@@ -17,9 +17,9 @@ export function loadImageSize(src, maxW = 200) {
 export async function removeImageBackground(src) {
   // Use the locally installed package instead of a CDN import,
   // to avoid supply-chain risk and CSP violations.
-  // Cap at 12 s — on some devices onnxruntime/WASM loading hangs indefinitely.
+  // Cap at 3 s — onnxruntime/WASM can hang; fall back to the raw image fast.
   const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("bg-removal timeout")), 12000)
+    setTimeout(() => reject(new Error("bg-removal timeout")), 3000)
   );
   const { removeBackground } = await import("@imgly/background-removal");
   const blob = await Promise.race([removeBackground(src), timeout]);

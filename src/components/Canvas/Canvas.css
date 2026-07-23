@@ -130,14 +130,10 @@
   .canvas-minibar { height: 36px; padding: 0 10px; gap: 8px; }
   .canvas-minibar__count { font-size: 10px; }
 
-  /* Reserve space at bottom for the tab bar + panel */
+  /* Reserve space at the bottom so the fixed sidebar tab bar
+     (~56 px + safe-area) doesn't overlap the canvas area. */
   .canvas-wrap {
-    padding-bottom: 0;
-  }
-
-  .canvas-area {
-    /* Push canvas up so bottom tab bar doesn't overlap furniture */
-    margin-bottom: 0;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
   .canvas-empty__text { font-size: 13px; }

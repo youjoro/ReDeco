@@ -334,7 +334,7 @@ function CanvasApp({
           background={background}
           items={items}
           onItemsChange={setItems}
-          onAddItem={handleAddItem}
+          onAddItem={onAddItem}
           onBackgroundChange={setBackground}
           onAddToList={(canvasItem) => addToList(canvasItem, currentRoom.id)}
         />

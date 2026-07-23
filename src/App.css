@@ -120,9 +120,16 @@
 }
 @media (max-width: 640px) {
   .canvas-enter-sidebar {
-    width: 100%;
-    height: auto;
-    flex-shrink: unset;
+    /* Sidebar is position:fixed on mobile and manages its own placement.
+       The wrapper must take zero flex space and must NOT have a transform
+       (animation fill-mode:both would leave translateX/Y applied, creating
+       a containing block that breaks the fixed sidebar's positioning). */
+    width: 0;
+    height: 0;
+    flex: none;
+    overflow: visible;
+    animation: none;
+    opacity: 1;
   }
 }
 .canvas-enter-body {

@@ -1,74 +1,100 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { FURNITURE_FIXTURES } from "../../lib/furnitureFixtures";
 import { loadImageSize } from "../../lib/imageUtils";
 import "./SearchTab.css";
 
-// Touch-drag helper — attaches non-passive move/end listeners imperatively so
-// we can call preventDefault() on every touchmove and suppress the following
-// click if the gesture turns into a drag.
+// Touch-drag helper — direction-aware so horizontal swipes scroll the carousel
+// instead of accidentally triggering a canvas-drag.
+//
+// Decision logic: wait until movement exceeds DECIDE_PX, then check axis.
+// • abs(dx) > abs(dy) → horizontal swipe → let native scroll happen (no preventDefault)
+// • abs(dy) >= abs(dx) → vertical/diagonal → commit to canvas drag
+const DECIDE_PX = 6;
+
 function startTouchDrag(e, item, onDragStart) {
   const t0 = e.touches[0];
   const startX = t0.clientX;
   const startY = t0.clientY;
 
-  // Ghost image that follows the finger
-  const ghost = document.createElement("div");
-  ghost.style.cssText = [
-    "position:fixed",
-    `left:${startX}px`,
-    `top:${startY}px`,
-    "width:80px",
-    "height:80px",
-    "transform:translate(-50%,-50%)",
-    "pointer-events:none",
-    "z-index:9999",
-    "border-radius:10px",
-    "overflow:hidden",
-    "box-shadow:0 8px 28px rgba(0,0,0,0.35)",
-    "opacity:0.88",
-    "transition:none",
-  ].join(";");
-  const img = document.createElement("img");
-  img.src = item.image_url;
-  img.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;";
-  ghost.appendChild(img);
-  document.body.appendChild(ghost);
-
-  let dragging = false;
+  let ghost = null;
+  let dragging = false;   // committed to canvas drag
+  let decided = false;    // direction has been locked in
   let sidebarClosed = false;
 
-  const onMove = (ev) => {
-    // Always prevent default so iOS doesn't claim the scroll gesture.
-    ev.preventDefault();
-
-    const t = ev.touches[0];
-    const dist = Math.hypot(t.clientX - startX, t.clientY - startY);
-
-    if (dist > 8) {
-      dragging = true;
-      // Collapse the sidebar panel on first real movement so the canvas is
-      // fully visible before the user releases their finger.
-      if (!sidebarClosed && onDragStart) {
-        onDragStart();
-        sidebarClosed = true;
-      }
-    }
-
-    ghost.style.left = `${t.clientX}px`;
-    ghost.style.top  = `${t.clientY}px`;
+  // Ghost is created lazily — only after we confirm it's a canvas drag.
+  const makeGhost = (x, y) => {
+    const g = document.createElement("div");
+    g.style.cssText = [
+      "position:fixed",
+      `left:${x}px`,
+      `top:${y}px`,
+      "width:80px",
+      "height:80px",
+      "transform:translate(-50%,-50%)",
+      "pointer-events:none",
+      "z-index:9999",
+      "border-radius:10px",
+      "overflow:hidden",
+      "box-shadow:0 8px 28px rgba(0,0,0,0.35)",
+      "opacity:0.88",
+    ].join(";");
+    const img = document.createElement("img");
+    img.src = item.image_url;
+    img.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;";
+    g.appendChild(img);
+    document.body.appendChild(g);
+    return g;
   };
 
   const cleanup = () => {
     document.removeEventListener("touchmove",   onMove,   { passive: false });
     document.removeEventListener("touchend",    onEnd);
     document.removeEventListener("touchcancel", onCancel);
-    if (ghost.parentNode) document.body.removeChild(ghost);
+    if (ghost?.parentNode) document.body.removeChild(ghost);
+    ghost = null;
+  };
+
+  const onMove = (ev) => {
+    const t = ev.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const dist = Math.hypot(dx, dy);
+
+    // Lock in direction once we've moved far enough.
+    if (!decided && dist > DECIDE_PX) {
+      decided = true;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        // Horizontal swipe → scroll the carousel; bail out entirely.
+        cleanup();
+        return;
+      }
+
+      // Vertical/diagonal → canvas drag. Create ghost and optionally collapse sidebar.
+      dragging = true;
+      ghost = makeGhost(startX, startY);
+
+      if (!sidebarClosed && onDragStart) {
+        onDragStart();
+        sidebarClosed = true;
+      }
+    }
+
+    // If we haven't committed to a drag yet, don't block anything.
+    if (!dragging) return;
+
+    // We are dragging — prevent default to stop iOS from claiming the gesture.
+    ev.preventDefault();
+    if (ghost) {
+      ghost.style.left = `${t.clientX}px`;
+      ghost.style.top  = `${t.clientY}px`;
+    }
   };
 
   const onEnd = (ev) => {
     cleanup();
-    if (!dragging) return; // short tap → let onClick fire normally
-    ev.preventDefault(); // suppress the click that would follow
+    if (!dragging) return; // tap or horizontal swipe — let click/scroll fire normally
+    ev.preventDefault();  // suppress the synthesised click
     const t = ev.changedTouches[0];
     document.dispatchEvent(new CustomEvent("canvasTouchDrop", {
       detail: {
@@ -87,12 +113,15 @@ function startTouchDrag(e, item, onDragStart) {
   document.addEventListener("touchcancel", onCancel);
 }
 
+// How far each arrow click scrolls (px).
+const ARROW_SCROLL = 232;
+
 export default function SearchTab({ onAddItem, onDragStart }) {
   const [query,  setQuery]  = useState("");
   const [adding, setAdding] = useState(null);
+  const scrollRef = useRef(null);
 
   // Filter the fixture catalogue by the current query.
-  // Empty query → show everything.
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return FURNITURE_FIXTURES;
@@ -106,8 +135,6 @@ export default function SearchTab({ onAddItem, onDragStart }) {
   const handleAdd = (src, label) => {
     if (adding) return;
     setAdding(src);
-    // loadImageSize resolves from the browser's cached thumbnail — near-instant.
-    // Background removal now happens in App after the item lands on the canvas.
     loadImageSize(src).then((size) => {
       onAddItem(src, size, label);
       setAdding(null);
@@ -125,6 +152,20 @@ export default function SearchTab({ onAddItem, onDragStart }) {
   };
 
   const handleClear = () => setQuery("");
+
+  // Redirect vertical wheel → horizontal scroll so the scroll wheel works on desktop.
+  const handleWheel = useCallback((e) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // Only intercept when scroll content is actually wider than the container.
+    if (el.scrollWidth <= el.clientWidth) return;
+    e.preventDefault();
+    el.scrollBy({ left: e.deltaY !== 0 ? e.deltaY : e.deltaX, behavior: "auto" });
+  }, []);
+
+  const scrollBy = (delta) => {
+    scrollRef.current?.scrollBy({ left: delta, behavior: "smooth" });
+  };
 
   return (
     <div className="search-tab">
@@ -148,16 +189,36 @@ export default function SearchTab({ onAddItem, onDragStart }) {
         )}
       </div>
 
-      {/* Status row */}
-      <p className="search-tab__count">
-        {query
-          ? <><strong>{results.length}</strong> result{results.length !== 1 ? "s" : ""} for "<em>{query}</em>"</>
-          : <><strong>{results.length}</strong> items — tap or drag to place</>
-        }
-      </p>
+      {/* Status + arrow controls */}
+      <div className="search-tab__meta">
+        <p className="search-tab__count">
+          {query
+            ? <><strong>{results.length}</strong> result{results.length !== 1 ? "s" : ""} for "<em>{query}</em>"</>
+            : <><strong>{results.length}</strong> items — tap or drag to place</>
+          }
+        </p>
+        {results.length > 0 && (
+          <div className="search-tab__arrows" aria-label="Scroll catalogue">
+            <button
+              className="search-tab__arrow"
+              onClick={() => scrollBy(-ARROW_SCROLL)}
+              aria-label="Scroll left"
+            >‹</button>
+            <button
+              className="search-tab__arrow"
+              onClick={() => scrollBy(ARROW_SCROLL)}
+              aria-label="Scroll right"
+            >›</button>
+          </div>
+        )}
+      </div>
 
-      {/* Scrollable catalogue grid */}
-      <div className="search-tab__scroll">
+      {/* Horizontal carousel */}
+      <div
+        className="search-tab__scroll"
+        ref={scrollRef}
+        onWheel={handleWheel}
+      >
         {results.length === 0 && (
           <div className="search-tab__empty">
             <span className="search-tab__empty-icon">🛋️</span>

@@ -3,7 +3,6 @@
   flex-direction: column;
   flex: 1;
   overflow: hidden;
-  min-height: 0;
 }
 
 /* ── Search bar ── */
@@ -74,9 +73,9 @@
 .search-tab__count strong { color: var(--accent); }
 .search-tab__count em    { font-style: normal; color: var(--text-sub); }
 
-/* ── Arrow navigation buttons ── */
+/* Arrow buttons — hidden on desktop, shown on mobile carousel */
 .search-tab__arrows {
-  display: flex;
+  display: none;
   gap: 3px;
   flex-shrink: 0;
 }
@@ -114,25 +113,12 @@
 .search-tab__notice--removing { background: var(--accent-light); color: var(--accent); }
 .search-tab__notice--error    { background: var(--danger-bg);    color: var(--danger);  }
 
-/* ── Horizontal carousel scroll container ── */
+/* ══ DESKTOP: vertical scrolling 2-column grid (default) ══════════════════ */
+
 .search-tab__scroll {
   flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  /* Scroll snap — each card snaps into view */
-  scroll-snap-type: x mandatory;
-  /* Thin scrollbar on desktop */
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-  /* Negative padding trick: let cards visually bleed to edge */
-  padding-bottom: 8px;
-}
-.search-tab__scroll::-webkit-scrollbar { height: 4px; }
-.search-tab__scroll::-webkit-scrollbar-track { background: transparent; }
-.search-tab__scroll::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .search-tab__empty {
@@ -143,7 +129,6 @@
   padding: 32px 16px;
   gap: 8px;
   color: var(--text-faint);
-  min-width: 100%;
 }
 .search-tab__empty-icon { font-size: 32px; }
 .search-tab__empty-text { font-size: 12px; text-align: center; }
@@ -163,24 +148,18 @@
 }
 .search-tab__reset:hover { background: var(--accent-light); }
 
-/* ── Horizontal item row ── */
+/* 2-column grid for desktop */
 .search-tab__grid {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  /* Extra right padding so the last card doesn't feel flush */
-  padding-right: 8px;
-  /* Needed so flex children don't get squished */
-  width: max-content;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding-bottom: 4px;
+  padding-right: 2px;
 }
 
-/* ── Individual furniture card ── */
+/* Product-card style: white bg, contain (shows full piece), name label */
 .search-tab__result {
-  /* Fixed width so cards are uniform and carousel feels intentional */
-  width: 112px;
-  flex-shrink: 0;
-  scroll-snap-align: start;
-  border-radius: 10px;
+  border-radius: 9px;
   overflow: hidden;
   cursor: pointer;
   border: 1.5px solid var(--border);
@@ -189,22 +168,19 @@
   display: flex;
   flex-direction: column;
   transition: border-color 0.12s, transform 0.12s, box-shadow 0.12s;
-  /* Ensure touch target height is comfortable */
-  min-height: 124px;
 }
 .search-tab__result:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 .search-tab__result--adding { cursor: wait; }
 
 .search-tab__result img {
   width: 100%;
-  /* Square aspect so all furniture renders consistently */
   aspect-ratio: 1;
   object-fit: contain;
-  padding: 8px;
+  padding: 6px;
   display: block;
   background: #ffffff;
 }
@@ -232,18 +208,44 @@
   font-size: 22px;
 }
 
-/* ── Mobile tweaks ── */
+/* ══ MOBILE: horizontal scroll-snap carousel ════════════════════════════ */
 @media (max-width: 640px) {
-  /* On mobile the sidebar is a bottom sheet — give the carousel enough height */
+
+  /* Show arrow buttons on mobile */
+  .search-tab__arrows { display: flex; }
+
+  /* Horizontal scroll container */
   .search-tab__scroll {
-    /* No max-height cap; the panel height controls it via the sheet */
     overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding-bottom: 8px;
+  }
+  .search-tab__scroll::-webkit-scrollbar { height: 4px; }
+  .search-tab__scroll::-webkit-scrollbar-track { background: transparent; }
+  .search-tab__scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Horizontal flex row */
+  .search-tab__grid {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    padding-bottom: 0;
+    padding-right: 8px;
+    /* Prevent flex items from shrinking to fit — let them overflow */
+    width: max-content;
   }
 
-  /* Slightly wider cards on mobile for bigger touch targets */
+  /* Fixed-width cards that snap into place */
   .search-tab__result {
     width: 128px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
     min-height: 140px;
+    border-radius: 10px;
   }
 
   .search-tab__result img {
@@ -253,5 +255,9 @@
   .search-tab__result-label {
     font-size: 10px;
     padding: 5px 6px;
+  }
+
+  .search-tab__empty {
+    min-width: 80vw;
   }
 }

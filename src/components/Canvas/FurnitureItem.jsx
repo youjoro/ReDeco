@@ -3,7 +3,7 @@ import { snap } from "../../lib/snapGrid";
 import { useWindowDrag } from "../../hooks/useWindowDrag";
 import "./FurnitureItem.css";
 
-export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDelete, onAddToList, isSelected, onSelect, gridSize }) {
+export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDelete, onAddToList, isSelected, onSelect, gridSize, zoom = 1 }) {
   const dragOffset  = useRef(null);
   const resizeStart = useRef(null);
   const elRef       = useRef(null);
@@ -11,18 +11,23 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
   const { startMouse, startTouch } = useWindowDrag();
 
   // ── Shared move/end logic ──────────────────────────────────────────────────
+  // clientX/Y values coming in are in screen pixels. Dividing by zoom converts
+  // them into canvas-space pixels (the coordinate system items are stored in).
   const applyDrag = (clientX, clientY) => {
     onDrag(item.id, {
-      x: snap(clientX - dragOffset.current.x, gridSize),
-      y: snap(clientY - dragOffset.current.y, gridSize),
+      x: snap(clientX / zoom - dragOffset.current.x, gridSize),
+      y: snap(clientY / zoom - dragOffset.current.y, gridSize),
     });
   };
 
-  const applyResize = (clientX) => {
-    const w = Math.max(60, snap(resizeStart.current.w + (clientX - resizeStart.current.mx), gridSize));
+  const applyResize = (canvasX) => {
+    const w = Math.max(60, snap(resizeStart.current.w + (canvasX - resizeStart.current.mx), gridSize));
     onResize(item.id, { width: w, height: Math.round(w / resizeStart.current.r) });
   };
 
+  // Rotation uses getBoundingClientRect on the element itself (which returns the
+  // visual/screen rect including the zoom transform), so both the centre point and
+  // clientX/Y are in the same screen-space — no zoom correction needed here.
   const getRotationAngle = (clientX, clientY) => {
     const rect = elRef.current.getBoundingClientRect();
     const cx = rect.left + rect.width  / 2;
@@ -38,7 +43,8 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     if (e.target.dataset.handle || e.target.dataset.del || e.target.dataset.cart || e.target.dataset.rotate) return;
     e.preventDefault(); e.stopPropagation();
     onSelect(item.id);
-    dragOffset.current = { x: e.clientX - item.x, y: e.clientY - item.y };
+    // Store offset in canvas-space (divide screen coords by zoom).
+    dragOffset.current = { x: e.clientX / zoom - item.x, y: e.clientY / zoom - item.y };
     startMouse((e) => applyDrag(e.clientX, e.clientY));
   };
 
@@ -48,23 +54,23 @@ export default function FurnitureItem({ item, onDrag, onResize, onRotate, onDele
     e.stopPropagation();
     onSelect(item.id);
     const t = e.touches[0];
-    dragOffset.current = { x: t.clientX - item.x, y: t.clientY - item.y };
+    dragOffset.current = { x: t.clientX / zoom - item.x, y: t.clientY / zoom - item.y };
     startTouch((e) => { const t = e.touches[0]; applyDrag(t.clientX, t.clientY); }, undefined, true);
   };
 
   // ── Mouse resize ───────────────────────────────────────────────────────────
   const startMouseResize = (e) => {
     e.stopPropagation(); e.preventDefault();
-    resizeStart.current = { mx: e.clientX, w: item.width, r: item.width / item.height };
-    startMouse((e) => applyResize(e.clientX));
+    resizeStart.current = { mx: e.clientX / zoom, w: item.width, r: item.width / item.height };
+    startMouse((e) => applyResize(e.clientX / zoom));
   };
 
   // ── Touch resize ───────────────────────────────────────────────────────────
   const startTouchResize = (e) => {
     e.stopPropagation();
     const t = e.touches[0];
-    resizeStart.current = { mx: t.clientX, w: item.width, r: item.width / item.height };
-    startTouch((e) => applyResize(e.touches[0].clientX), undefined, true);
+    resizeStart.current = { mx: t.clientX / zoom, w: item.width, r: item.width / item.height };
+    startTouch((e) => applyResize(e.touches[0].clientX / zoom), undefined, true);
   };
 
   // ── Mouse rotate ───────────────────────────────────────────────────────────
